@@ -1,0 +1,91 @@
+# KidLife Monorepo .gitignore
+
+# ----------------------------------------------------------------------------
+# NodeJS / Dependencies
+# ----------------------------------------------------------------------------
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnp
+.pnp.js
+
+# ----------------------------------------------------------------------------
+# Build / Compilation
+# ----------------------------------------------------------------------------
+dist/
+build/
+lib/
+out/
+.next/
+.nuxt/
+public/build/
+.swc/
+
+# ----------------------------------------------------------------------------
+# React Native / Expo
+# ----------------------------------------------------------------------------
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+# React Native specific
+.react-native/
+# Android
+android/app/build/
+android/app/build_intermidiates/
+android/app/src/testDebug/
+android/app/src/testRelease/
+android/.gradle/
+android/local.properties
+# iOS
+ios/build/
+ios/Pods/
+ios/Podfile.lock
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# ----------------------------------------------------------------------------
+# Environment Variables
+# ----------------------------------------------------------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# ----------------------------------------------------------------------------
+# IDE / Editor
+# ----------------------------------------------------------------------------
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.DS_Store
+
+# ----------------------------------------------------------------------------
+# Logs / Cache / Misc
+# ----------------------------------------------------------------------------
+*.log
+logs/
+coverage/
+.nyc_output/
+.cache/
+.eslintcache
+.stylelintcache
+.tsbuildinfo
+
+# ----------------------------------------------------------------------------
+# System
+# ----------------------------------------------------------------------------
+Thumbs.db
