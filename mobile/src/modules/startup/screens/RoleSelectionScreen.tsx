@@ -3,7 +3,7 @@ import { StyleSheet, View, TouchableOpacity, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Container, Text } from '@/shared/components';
 import { Navigators } from '@/navigation/constants';
-import { lightColors, spacing, shape, shadow } from '@/theme';
+import { spacing, shape, shadow } from '@/theme';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - spacing['2xl'] * 2 - spacing.lg) / 2;
@@ -48,10 +48,11 @@ export const RoleSelectionScreen = () => {
   const navigation = useNavigation<any>();
 
   const handleSelectRole = (_role: Role) => {
-    // Navigate to main app - role bifurcation will be handled by Redux state
+    // Keep the role in the navigation boundary for now. It can be replaced by
+    // the authenticated user profile once the auth API is connected.
     navigation.reset({
       index: 0,
-      routes: [{ name: Navigators.Main }],
+      routes: [{ name: Navigators.Main, params: { role: _role } }],
     });
   };
 
@@ -60,8 +61,8 @@ export const RoleSelectionScreen = () => {
       <Container style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text variant="displaySmall" align="center">
-            Who is using the app?
+          <Text variant="displaySmall" align="center" style={styles.heading}>
+            Bạn là ai?
           </Text>
           <Text
             variant="bodyMedium"
@@ -69,7 +70,7 @@ export const RoleSelectionScreen = () => {
             align="center"
             style={styles.subtitle}
           >
-            Choose your role to get the best experience
+            Bạn là phụ huynh hay trẻ em?
           </Text>
         </View>
 
@@ -77,18 +78,18 @@ export const RoleSelectionScreen = () => {
         <View style={styles.cardsRow}>
           <RoleCard
             role="parent"
-            title="Parent"
-            subtitle="Manage & monitor your child's progress"
+            title="Phụ huynh"
+            subtitle="Quản lý, theo dõi tiến độ học tập của con"
             emoji="👨‍👩‍👧"
-            color={lightColors.surface}
+            color="#8197FF"
             onPress={() => handleSelectRole('parent')}
           />
           <RoleCard
             role="child"
-            title="Child"
-            subtitle="Learn, earn coins & grow your pet!"
+            title="Trẻ em"
+            subtitle="Vào học, chăm pet và nhận thưởng mỗi ngày"
             emoji="🧒"
-            color={lightColors.primaryContainer}
+            color="#D9F58C"
             onPress={() => handleSelectRole('child')}
           />
         </View>
@@ -96,7 +97,7 @@ export const RoleSelectionScreen = () => {
         {/* Footer note */}
         <View style={styles.footer}>
           <Text variant="bodySmall" color="textSecondary" align="center">
-            You can switch roles anytime from your profile settings.
+            Bạn có thể chuyển tài khoản bất kỳ lúc nào.
           </Text>
         </View>
       </Container>
@@ -141,6 +142,9 @@ const styles = StyleSheet.create({
   cardTitle: {
     marginBottom: spacing.xs,
     textAlign: 'center',
+  },
+  heading: {
+    color: '#102980',
   },
   cardSubtitle: {
     textAlign: 'center',

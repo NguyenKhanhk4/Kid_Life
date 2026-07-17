@@ -1,115 +1,16 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, Container, Text, Input, Button } from '@/shared/components';
 import { Routes } from '@/navigation/constants';
-import { layout, spacing } from '@/theme';
+import { kidlifeColors as C } from '@/theme';
 
 export const LoginScreen = () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const navigation = useNavigation<any>();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      // Navigate to Role Selection screen per Figma spec
-      navigation.navigate(Routes.Auth.RoleSelection);
-    }, 1000);
-  };
-
-  return (
-    <Screen safeArea keyboardAware scrollable>
-      <Container style={styles.container}>
-        <View style={styles.header}>
-          <Text variant="displayMedium">Welcome Back</Text>
-          <Text
-            variant="bodyMedium"
-            color="textSecondary"
-            style={styles.subtitle}
-          >
-            Sign in to continue your journey
-          </Text>
-        </View>
-
-        <View style={styles.form}>
-          <Input
-            label="Email"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <Input
-            label="Password"
-            placeholder="Enter your password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          <Button
-            variant="text"
-            title="Forgot Password?"
-            onPress={() => navigation.navigate(Routes.Auth.ForgotPassword)}
-            style={styles.forgotPassword}
-          />
-        </View>
-
-        <View style={styles.footer}>
-          <Button
-            title="Login"
-            onPress={handleLogin}
-            loading={loading}
-            fullWidth
-            disabled={!email || !password}
-          />
-          <View style={styles.registerContainer}>
-            <Text variant="bodyMedium">Don&apos;t have an account? </Text>
-            <Button
-              variant="text"
-              title="Register"
-              onPress={() => navigation.navigate(Routes.Auth.Register)}
-            />
-          </View>
-        </View>
-      </Container>
-    </Screen>
-  );
+  return <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"><Pressable style={styles.back} onPress={() => navigation.goBack()}><Ionicons name="chevron-back" size={20} color={C.primary} /></Pressable><View style={styles.form}><Text style={styles.title}>Đăng nhập</Text><Text style={styles.subtitle}>Nhập thông tin tài khoản của bạn</Text><Field icon="person-outline" label="Tên đăng nhập" placeholder="Tên đăng nhập..." value={username} onChangeText={setUsername} /><Field icon="eye-outline" label="Mật khẩu" placeholder="Mật khẩu..." secureTextEntry value={password} onChangeText={setPassword} /><View style={styles.options}><View style={styles.remember}><View style={styles.checkbox} /><Text style={styles.optionText}>Ghi nhớ đăng nhập</Text></View><Pressable onPress={() => navigation.navigate(Routes.Auth.ForgotPassword)}><Text style={styles.link}>Quên mật khẩu?</Text></Pressable></View><Pressable style={styles.primaryButton} onPress={() => navigation.navigate(Routes.Auth.RoleSelection)}><Text style={styles.buttonText}>Đăng nhập</Text></Pressable><View style={styles.divider}><View style={styles.line} /><Text style={styles.or}>hoặc</Text><View style={styles.line} /></View><View style={styles.socialRow}><Pressable style={styles.social}><Text style={styles.google}>G</Text><Text style={styles.socialText}>Google</Text></Pressable><Pressable style={styles.social}><Text style={styles.facebook}>f</Text><Text style={styles.socialText}>Facebook</Text></Pressable></View><View style={styles.register}><Text style={styles.optionText}>Bạn chưa có tài khoản? </Text><Pressable onPress={() => navigation.navigate(Routes.Auth.Register)}><Text style={styles.link}>Đăng ký ngay!</Text></Pressable></View></View></ScrollView>;
 };
 
-const styles = StyleSheet.create({
-  container: {
-    padding: layout.screenPadding,
-    flex: 1,
-  },
-  header: {
-    marginTop: spacing['2xl'],
-    marginBottom: spacing['2xl'],
-  },
-  subtitle: {
-    marginTop: spacing.xs,
-  },
-  form: {
-    gap: spacing.lg,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginTop: -spacing.sm,
-  },
-  footer: {
-    marginTop: 'auto',
-    paddingTop: spacing['2xl'],
-    paddingBottom: spacing.xl,
-  },
-  registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-});
+function Field({ icon, label, placeholder, secureTextEntry, value, onChangeText }: { icon: any; label: string; placeholder: string; secureTextEntry?: boolean; value: string; onChangeText: (value: string) => void }) { return <View style={styles.fieldWrap}><Text style={styles.label}>{label}</Text><View style={styles.field}><Ionicons name={icon} size={19} color={C.primary} /><TextInput style={styles.input} placeholder={placeholder} placeholderTextColor="#9DA9D8" value={value} onChangeText={onChangeText} secureTextEntry={secureTextEntry} /></View></View>; }
+const styles = StyleSheet.create({ screen: { flex: 1, backgroundColor: '#F5F7FF' }, content: { minHeight: '100%', paddingHorizontal: 20 }, back: { width: 42, height: 42, borderRadius: 22, backgroundColor: '#E4E9FF', alignItems: 'center', justifyContent: 'center', marginTop: 16 }, form: { marginTop: 148 }, title: { color: '#102980', fontSize: 28, fontWeight: '900', textAlign: 'center' }, subtitle: { color: '#A4ADD0', fontSize: 12, textAlign: 'center', marginTop: 5, marginBottom: 25 }, fieldWrap: { marginBottom: 15 }, label: { color: '#17328B', fontSize: 12, fontWeight: '800', marginBottom: 7 }, field: { height: 49, borderRadius: 15, backgroundColor: '#E7EBFF', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 }, input: { flex: 1, color: C.text, fontSize: 12, marginLeft: 9 }, options: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 3 }, remember: { flexDirection: 'row', alignItems: 'center' }, checkbox: { width: 15, height: 15, borderRadius: 3, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CBD2EB', marginRight: 7 }, optionText: { color: '#98A3C7', fontSize: 10 }, link: { color: C.primary, fontSize: 10, fontWeight: '800' }, primaryButton: { height: 53, borderRadius: 28, backgroundColor: '#2445FF', alignItems: 'center', justifyContent: 'center', marginTop: 20 }, buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' }, divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 18 }, line: { flex: 1, height: 1, backgroundColor: '#DCE2F4' }, or: { color: '#A4ADD0', fontSize: 10, marginHorizontal: 11 }, socialRow: { flexDirection: 'row', gap: 10 }, social: { flex: 1, height: 45, backgroundColor: '#FFF', borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }, google: { color: '#EA4335', fontSize: 17, fontWeight: '900' }, facebook: { color: '#1877F2', fontSize: 19, fontWeight: '900' }, socialText: { color: '#536088', fontSize: 11, fontWeight: '700' }, register: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 } });

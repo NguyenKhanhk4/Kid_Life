@@ -12,3 +12,4 @@ export * from './dark';
 export * from './helpers';
 export * from './zIndex';
 export * from './types';
+export * from './kidlife';

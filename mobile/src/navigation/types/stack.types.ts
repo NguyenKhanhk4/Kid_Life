@@ -17,5 +17,7 @@ export type AuthStackParamList = {
 };
 
 export type AppStackParamList = {
-  [Navigators.Main]: NavigatorScreenParams<MainTabParamList>;
+  [Navigators.Main]:
+    | (NavigatorScreenParams<MainTabParamList> & { role?: 'parent' | 'child' })
+    | undefined;
 };
