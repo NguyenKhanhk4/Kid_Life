@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, Text, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
 
@@ -12,13 +12,14 @@ const initialRewards = [
 export default function RewardsParentScreen() {
   const [rewards, setRewards] = useState(initialRewards);
   const [approved, setApproved] = useState<string | null>(null);
+  
   return <ScrollView style={L.screen} contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
     <View style={styles.header}><View><Text style={styles.overline}>GAMIFICATION</Text><Text style={styles.title}>Phần thưởng</Text><Text style={styles.subtitle}>Tạo động lực cho bé mỗi ngày</Text></View><Pressable style={styles.addButton} onPress={() => setRewards((value) => [...value, { id: `${Date.now()}`, title: 'Phần thưởng mới', detail: 'Chưa cấu hình', cost: 200, icon: '🎁', active: true }])}><Ionicons name="add" size={20} color="#FFF" /><Text style={styles.addText}>Thêm</Text></Pressable></View>
     <View style={styles.overview}><View style={styles.overviewBlock}><Text style={styles.overviewValue}>1,250</Text><Text style={styles.overviewLabel}>XP của bé Minh Anh</Text></View><View style={styles.verticalLine} /><View style={styles.overviewBlock}><Text style={[styles.overviewValue, { color: C.orange }]}>2</Text><Text style={styles.overviewLabel}>Yêu cầu chờ duyệt</Text></View></View>
     <View style={styles.sectionHeader}><Text style={L.sectionTitle}>Danh sách phần thưởng</Text><View style={styles.filter}><Text style={styles.filterText}>Đang hoạt động</Text><Ionicons name="chevron-down" size={15} color={C.primary} /></View></View>
     {rewards.map((reward) => <View key={reward.id} style={[L.card, styles.rewardCard]}><View style={styles.rewardTop}><View style={styles.iconBox}><Text style={styles.icon}>{reward.icon}</Text></View><View style={styles.rewardCopy}><Text style={styles.rewardTitle}>{reward.title}</Text><Text style={styles.rewardDetail}>{reward.detail}</Text></View><Pressable onPress={() => setRewards((value) => value.map((item) => item.id === reward.id ? { ...item, active: !item.active } : item))}><View style={[styles.switch, reward.active && styles.switchActive]}><View style={[styles.switchThumb, reward.active && styles.switchThumbActive]} /></View></Pressable></View><View style={styles.rewardBottom}><View style={styles.costPill}><Ionicons name="star" size={14} color={C.orange} /><Text style={styles.costText}>{reward.cost} XP</Text></View><View style={styles.actions}><Pressable><Text style={styles.edit}>Chỉnh sửa</Text></Pressable><Pressable><Ionicons name="ellipsis-horizontal" size={20} color={C.muted} /></Pressable></View></View></View>)}
     <View style={styles.sectionHeader}><Text style={L.sectionTitle}>Yêu cầu đổi thưởng</Text><View style={styles.pendingBadge}><Text style={styles.pendingText}>2 mới</Text></View></View>
-    <View style={[L.card, styles.redemptionCard]}>{[['🎮', 'Minh Anh', '15 phút chơi game', '100 XP'], ['🍕', 'Minh Anh', 'Chọn món ăn tối', '180 XP']].map(([icon, child, reward, cost]) => <View key={reward} style={styles.redemption}><Text style={styles.redemptionIcon}>{icon}</Text><View style={styles.redemptionCopy}><Text style={styles.redemptionTitle}>{child} muốn đổi “{reward}”</Text><Text style={styles.redemptionMeta}>{cost}  •  Hôm nay, 18:45</Text></View><Pressable style={[styles.approve, approved === reward && styles.approved]} onPress={() => setApproved(reward)}><Ionicons name={approved === reward ? 'checkmark' : 'checkmark-outline'} size={17} color={approved === reward ? C.green : '#FFF'} /></Pressable></View>)}</View>
+    <View style={[L.card, styles.redemptionCard, { marginBottom: 30 }]}>{[['🎮', 'Minh Anh', '15 phút chơi game', '100 XP'], ['🍕', 'Minh Anh', 'Chọn món ăn tối', '180 XP']].map(([icon, child, reward, cost]) => <View key={reward} style={styles.redemption}><Text style={styles.redemptionIcon}>{icon}</Text><View style={styles.redemptionCopy}><Text style={styles.redemptionTitle}>{child} muốn đổi “{reward}”</Text><Text style={styles.redemptionMeta}>{cost}  •  Hôm nay, 18:45</Text></View><Pressable style={[styles.approve, approved === reward && styles.approved]} onPress={() => setApproved(reward)}><Ionicons name={approved === reward ? 'checkmark' : 'checkmark-outline'} size={17} color={approved === reward ? C.green : '#FFF'} /></Pressable></View>)}</View>
   </ScrollView>;
 }
 
