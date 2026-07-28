@@ -50,4 +50,19 @@ export type AppStackParamList = {
 
   // Reward sub-screens
   [Routes.Reward.Shop]: { mode?: 'parent' | 'child' } | undefined;
+
+  // Feature sub-screens
+  [Routes.Features.Hub]: undefined;
+  [Routes.Features.ViralMilestones]: undefined;
+  [Routes.Features.Leaderboard]: undefined;
+  [Routes.Features.MemoryLane]: undefined;
+  [Routes.Features.AIReport]: undefined;
+  [Routes.Features.VirtualBank]: undefined;
+  [Routes.Features.MemoryLanePremium]: undefined;
+  [Routes.Features.BedtimeStories]: undefined;
+  [Routes.Features.ChildBedtimeStories]: undefined;
+  [Routes.Features.ParentBedtimeStories]: undefined;
+  [Routes.Features.CoParenting]: undefined;
+  [Routes.Features.MultiStepTask]: undefined;
+  [Routes.Features.PetEvolution]: undefined;
 };

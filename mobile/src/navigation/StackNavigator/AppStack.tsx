@@ -38,6 +38,22 @@ import RewardShopScreen from '@/modules/reward/screens/RewardShopScreen';
 
 // Pet screens
 import PetScreen from '@/modules/child/screens/PetScreen';
+import WalletScreen from '@/modules/child/screens/WalletScreen';
+
+// Feature screens (new)
+import FeaturesHubScreen from '@/modules/features/screens/FeaturesHubScreen';
+import ViralMilestonesScreen from '@/modules/features/screens/ViralMilestonesScreen';
+import LeaderboardScreen from '@/modules/features/screens/LeaderboardScreen';
+import MemoryLaneScreen from '@/modules/features/screens/MemoryLaneScreen';
+import AIReportScreen from '@/modules/features/screens/AIReportScreen';
+import VirtualBankScreen from '@/modules/features/screens/VirtualBankScreen';
+import MemoryLanePremiumScreen from '@/modules/features/screens/MemoryLanePremiumScreen';
+import BedtimeStoriesScreen from '@/modules/features/screens/BedtimeStoriesScreen';
+import ChildBedtimeStoriesScreen from '@/modules/features/screens/ChildBedtimeStoriesScreen';
+import ParentBedtimeStoriesScreen from '@/modules/features/screens/ParentBedtimeStoriesScreen';
+import CoParentingScreen from '@/modules/features/screens/CoParentingScreen';
+import MultiStepTaskScreen from '@/modules/features/screens/MultiStepTaskScreen';
+import PetEvolutionScreen from '@/modules/features/screens/PetEvolutionScreen';
 
 const AppStackNav = createNativeStackNavigator<AppStackParamList>();
 
@@ -89,6 +105,22 @@ export const AppStack = ({ route }: AppStackProps) => {
 
       {/* Pet Sub-screens */}
       <AppStackNav.Screen name="PetScreen" component={PetScreen as any} />
+      <AppStackNav.Screen name="WalletScreen" component={WalletScreen as any} />
+
+      {/* Feature Sub-screens (NEW) */}
+      <AppStackNav.Screen name={Routes.Features.Hub} component={FeaturesHubScreen} />
+      <AppStackNav.Screen name={Routes.Features.ViralMilestones} component={ViralMilestonesScreen} />
+      <AppStackNav.Screen name={Routes.Features.Leaderboard} component={LeaderboardScreen} />
+      <AppStackNav.Screen name={Routes.Features.MemoryLane} component={MemoryLaneScreen} />
+      <AppStackNav.Screen name={Routes.Features.AIReport} component={AIReportScreen} />
+      <AppStackNav.Screen name={Routes.Features.VirtualBank} component={VirtualBankScreen} />
+      <AppStackNav.Screen name={Routes.Features.MemoryLanePremium} component={MemoryLanePremiumScreen} />
+      <AppStackNav.Screen name={Routes.Features.BedtimeStories} component={BedtimeStoriesScreen} />
+      <AppStackNav.Screen name={Routes.Features.ChildBedtimeStories} component={ChildBedtimeStoriesScreen} />
+      <AppStackNav.Screen name={Routes.Features.ParentBedtimeStories} component={ParentBedtimeStoriesScreen} />
+      <AppStackNav.Screen name={Routes.Features.CoParenting} component={CoParentingScreen} />
+      <AppStackNav.Screen name={Routes.Features.MultiStepTask} component={MultiStepTaskScreen} />
+      <AppStackNav.Screen name={Routes.Features.PetEvolution} component={PetEvolutionScreen} />
     </AppStackNav.Navigator>
   );
 };

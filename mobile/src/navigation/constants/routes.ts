@@ -49,6 +49,21 @@ export const Routes = {
   Reward: {
     Shop: 'RewardShopScreen',
   },
+  Features: {
+    Hub: 'FeaturesHubScreen',
+    ViralMilestones: 'ViralMilestonesScreen',
+    Leaderboard: 'LeaderboardScreen',
+    MemoryLane: 'MemoryLaneScreen',
+    AIReport: 'AIReportScreen',
+    VirtualBank: 'VirtualBankScreen',
+    MemoryLanePremium: 'MemoryLanePremiumScreen',
+    BedtimeStories: 'BedtimeStoriesScreen',
+    ChildBedtimeStories: 'ChildBedtimeStoriesScreen',
+    ParentBedtimeStories: 'ParentBedtimeStoriesScreen',
+    CoParenting: 'CoParentingScreen',
+    MultiStepTask: 'MultiStepTaskScreen',
+    PetEvolution: 'PetEvolutionScreen',
+  },
   Modal: {
     Dialog: 'DialogScreen',
     Confirmation: 'ConfirmationScreen',

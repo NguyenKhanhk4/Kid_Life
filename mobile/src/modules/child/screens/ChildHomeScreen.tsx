@@ -32,10 +32,10 @@ export default function ChildHomeScreen() {
       {/* Top Banner section */}
       <View style={styles.topSection}>
         <View style={styles.topBar}>
-          <View style={styles.starPill}>
+          <TouchableOpacity style={styles.starPill} onPress={() => navigation.navigate('WalletScreen' as any)}>
             <Ionicons name="star" size={16} color={C.orange} />
-            <Text style={styles.starText}>1,250</Text>
-          </View>
+            <Text style={styles.starText}>1,250 XP</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.bagBtn} onPress={() => setIsWardrobeVisible(true)}>
             <Text style={{ fontSize: 22 }}>🎒</Text>
           </TouchableOpacity>
@@ -50,12 +50,13 @@ export default function ChildHomeScreen() {
         </View>
       </View>
 
-      <View style={[styles.quickRow, { marginBottom: 24, marginTop: 0 }]}>
-        <QuickAction icon="wallet-outline" label="Ví điểm" color={C.primary} onPress={() => navigation.navigate(Routes.Reward.Shop as any, { mode: 'child' })} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.quickRow, { marginBottom: 24, marginTop: 0 }]}>
+        <QuickAction icon="wallet-outline" label="Ví điểm" color={C.primary} onPress={() => navigation.navigate('WalletScreen' as any)} />
         <QuickAction icon="paw-outline" label="Thú cưng" color={C.orange} onPress={() => navigation.navigate('PetScreen' as any)} />
         <QuickAction icon="book-outline" label="Học bài" color={C.purple} onPress={() => navigation.navigate(Routes.Lesson.Library as any)} />
+        <QuickAction icon="moon-outline" label="Kể chuyện" color="#6C5CE7" onPress={() => navigation.navigate(Routes.Features.ChildBedtimeStories as any)} />
         <QuickAction icon="sparkles-outline" label="Điều ước" color="#FF4785" onPress={() => setIsWishVisible(true)} />
-      </View>
+      </ScrollView>
 
       <View style={styles.sectionHeader}><Text style={L.sectionTitle}>Nhiệm vụ hôm nay</Text><View style={[L.pill, styles.countPill]}><Text style={styles.countText}>2/5 hoàn thành</Text></View></View>
       {tasks.map((task) => (
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, marginTop: 4 }, countPill: { backgroundColor: C.primarySoft }, countText: { color: C.primary, fontWeight: '700', fontSize: 11 },
   taskCard: { minHeight: 86, padding: 14, flexDirection: 'row', alignItems: 'center', marginBottom: 10 }, taskDone: { backgroundColor: '#F1F9D7', borderColor: '#E2F19F' }, taskIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 12 }, taskEmoji: { fontSize: 30 }, taskCopy: { flex: 1 }, taskTitle: { color: C.text, fontSize: 14, fontWeight: '700', marginBottom: 7 }, taskMeta: { flexDirection: 'row', alignItems: 'center' }, xpBadge: { marginLeft: 8, backgroundColor: C.orangeSoft, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3 }, xpBadgeText: { color: '#B36A00', fontSize: 10, fontWeight: '800' },
   badgesCard: { ...L.card, padding: 14, flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 }, badge: { width: 54, height: 54, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }, badgeLocked: { backgroundColor: '#EEF0F8' }, badgeEmoji: { fontSize: 26 },
-  quickRow: { flexDirection: 'row', gap: 10, marginTop: 2 }, quickAction: { flex: 1, borderRadius: 16, paddingVertical: 14, alignItems: 'center', gap: 5 }, quickLabel: { fontSize: 12, fontWeight: '700' },
+  quickRow: { flexDirection: 'row', gap: 10, marginTop: 2 }, quickAction: { width: 72, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 4, alignItems: 'center', gap: 5 }, quickLabel: { fontSize: 11, fontWeight: '700' },
 
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(17,24,70,.48)' },
   wardrobeModal: { backgroundColor: '#F8FAFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, paddingBottom: 40, minHeight: '60%' },

@@ -5,7 +5,15 @@ import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
 
 const posts = [
   { name: 'Nguyễn Thị Nga', time: '2 giờ trước', avatar: '👩🏻', text: 'Bé nhà mình hôm nay tự giác dọn đồ chơi mà không cần nhắc, vui quá các ba mẹ ơi! 🌱', image: '🧒🏻🧸', likes: 24, comments: 8 },
-  { name: 'Trần Minh Anh', time: 'Hôm qua', avatar: '👨🏻', text: 'Có ai có gợi ý nhiệm vụ rèn kỹ năng tự lập cho bé 5 tuổi không ạ?', image: '', likes: 12, comments: 14 }
+  { name: 'Trần Minh Anh', time: 'Hôm qua', avatar: '👨🏻', text: 'Có ai có gợi ý nhiệm vụ rèn kỹ năng tự lập cho bé 5 tuổi không ạ?', image: '', likes: 12, comments: 14 },
+];
+
+const leaderboardData = [
+  { rank: 1, family: 'Gia đình Minh Anh', avatar: '👨‍👩‍👧', points: 2450, streak: 14, medal: '🥇' },
+  { rank: 2, family: 'Gia đình Bảo Ngọc', avatar: '👨‍👩‍👦', points: 2380, streak: 13, medal: '🥈' },
+  { rank: 3, family: 'Gia đình Đức Huy', avatar: '👩‍👧‍👦', points: 2200, streak: 12, medal: '🥉' },
+  { rank: 4, family: 'Gia đình Thu Hà', avatar: '👨‍👧', points: 1980, streak: 11, medal: '' },
+  { rank: 5, family: 'Gia đình Quốc Bảo', avatar: '👩‍👦', points: 1850, streak: 10, medal: '' },
 ];
 
 export default function CommunityScreen() {
@@ -13,36 +21,38 @@ export default function CommunityScreen() {
   const [activeTab, setActiveTab] = useState('Tất cả');
   const [isPostModalVisible, setIsPostModalVisible] = useState(false);
   const [postText, setPostText] = useState('');
-  
+
   const [activeCommentPost, setActiveCommentPost] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [activeSharePost, setActiveSharePost] = useState<string | null>(null);
+  const [joinedChallenge, setJoinedChallenge] = useState(false);
 
   const handleNotImplemented = () => {
-    Alert.alert("Tính năng đang phát triển", "Tính năng này sẽ được ra mắt trong phiên bản tiếp theo của KidLife!");
+    Alert.alert('Thông báo', 'Tính năng đang được cập nhật!');
   };
 
   const handleShare = () => {
     if (!postText.trim()) return;
-    Alert.alert("Thành công", "Bài viết của bạn đã được đăng lên cộng đồng KidLife!");
+    Alert.alert('Thành công', 'Bài viết của bạn đã được đăng lên cộng đồng KidLife!');
     setPostText('');
     setIsPostModalVisible(false);
   };
 
   const submitComment = () => {
     if (!commentText.trim()) return;
-    Alert.alert("Thành công", "Bình luận của bạn đã được gửi!");
+    Alert.alert('Thành công', 'Bình luận của bạn đã được gửi!');
     setCommentText('');
     setActiveCommentPost(null);
   };
 
   const submitShare = (platform: string) => {
-    Alert.alert("Chia sẻ thành công", `Đã chia sẻ bài viết qua ${platform}!`);
+    Alert.alert('Chia sẻ thành công', `Đã chia sẻ bài viết qua ${platform}!`);
     setActiveSharePost(null);
   };
 
   return (
     <ScrollView style={L.screen} showsVerticalScrollIndicator={false}>
+      {/* Top Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Cộng đồng KidLife</Text>
@@ -53,59 +63,111 @@ export default function CommunityScreen() {
         </Pressable>
       </View>
 
+      {/* Tabs */}
       <View style={styles.tabs}>
-        {['Tất cả', 'Hỏi đáp', 'Chia sẻ'].map(tab => (
+        {['Tất cả', 'Thử thách gia đình 🏆', 'Hỏi đáp', 'Chia sẻ'].map((tab) => (
           <Pressable key={tab} onPress={() => setActiveTab(tab)}>
             <Text style={activeTab === tab ? styles.activeTab : styles.tab}>{tab}</Text>
           </Pressable>
         ))}
       </View>
 
-      <Pressable style={styles.composer} onPress={() => setIsPostModalVisible(true)}>
-        <View style={styles.composerAvatar}><Text>👩🏻</Text></View>
-        <Text style={styles.placeholder}>Bạn muốn chia sẻ điều gì?</Text>
-        <Ionicons name="image-outline" size={20} color={C.primary} />
-      </Pressable>
+      {/* Family Leaderboard Tab Content */}
+      {activeTab === 'Thử thách gia đình 🏆' ? (
+        <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
+          {/* Active Challenge Banner */}
+          <View style={[L.card, styles.challengeCard]}>
+            <View style={styles.challengeHeader}>
+              <View style={styles.liveBadge}>
+                <Text style={styles.liveBadgeText}>● ĐANG DIỄN RA</Text>
+              </View>
+              <Text style={styles.challengeTime}>Còn 3 ngày 14 giờ</Text>
+            </View>
+            <Text style={styles.challengeTitle}>🏆 Thử thách: "14 ngày làm việc nhà không cần nhắc"</Text>
+            <Text style={styles.challengeDesc}>Dành cho trẻ 5-8 tuổi • 47/50 gia đình đã tham gia</Text>
 
-      {posts.map((post) => (
-        <View style={[L.card, styles.post]} key={post.name}>
-          <View style={styles.postHeader}>
-            <Text style={styles.postAvatar}>{post.avatar}</Text>
-            <View style={styles.postUser}>
-              <Text style={styles.postName}>{post.name}</Text>
-              <Text style={styles.postTime}>{post.time}</Text>
-            </View>
-            <Pressable onPress={handleNotImplemented}>
-              <Ionicons name="ellipsis-horizontal" size={20} color={C.muted} />
-            </Pressable>
+            {!joinedChallenge ? (
+              <TouchableOpacity style={styles.joinChallengeBtn} onPress={() => { setJoinedChallenge(true); Alert.alert('🎉 Đã tham gia!', 'Gia đình bạn đã tham gia thử thách. Làm nhiệm vụ mỗi ngày để tích điểm!'); }}>
+                <Text style={styles.joinChallengeText}>Tham gia thử thách ngay</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.joinedBadge}>
+                <Ionicons name="checkmark-circle" size={18} color={C.green} />
+                <Text style={styles.joinedText}>Đã tham gia! Đang đứng vị trí #1</Text>
+              </View>
+            )}
           </View>
-          
-          <Text style={styles.postText}>{post.text}</Text>
-          {post.image ? (
-            <View style={styles.postImage}>
-              <Text style={styles.postImageText}>{post.image}</Text>
-            </View>
-          ) : null}
-          
-          <View style={styles.postActions}>
-            <Pressable 
-              style={styles.action} 
-              onPress={() => setLiked((value) => value.includes(post.name) ? value.filter((item) => item !== post.name) : [...value, post.name])}
-            >
-              <Ionicons name={liked.includes(post.name) ? 'heart' : 'heart-outline'} size={18} color={liked.includes(post.name) ? C.red : C.muted} />
-              <Text style={styles.actionText}>{post.likes + (liked.includes(post.name) ? 1 : 0)}</Text>
-            </Pressable>
-            <Pressable style={styles.action} onPress={() => setActiveCommentPost(post.name)}>
-              <Ionicons name="chatbubble-outline" size={17} color={C.muted} />
-              <Text style={styles.actionText}>{post.comments}</Text>
-            </Pressable>
-            <Pressable style={styles.action} onPress={() => setActiveSharePost(post.name)}>
-              <Ionicons name="share-social-outline" size={17} color={C.muted} />
-              <Text style={styles.actionText}>Chia sẻ</Text>
-            </Pressable>
+
+          {/* Real-time Leaderboard */}
+          <Text style={[L.sectionTitle, { marginBottom: 12, marginTop: 10 }]}>Bảng xếp hạng tuần này</Text>
+
+          <View style={styles.leaderboardBox}>
+            {leaderboardData.map((item) => (
+              <View key={item.rank} style={[styles.rankRow, item.rank === 1 && styles.rankOneRow]}>
+                <Text style={styles.rankMedal}>{item.medal || `#${item.rank}`}</Text>
+                <Text style={styles.rankAvatar}>{item.avatar}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rankFamily, item.rank === 1 && { color: C.primary, fontWeight: '800' }]}>{item.family}</Text>
+                  <Text style={styles.rankStreak}>🔥 {item.streak} ngày streak</Text>
+                </View>
+                <Text style={[styles.rankPts, item.rank === 1 && { color: C.primary }]}>{item.points.toLocaleString()} điểm</Text>
+              </View>
+            ))}
           </View>
         </View>
-      ))}
+      ) : (
+        <>
+          {/* Post Composer */}
+          <Pressable style={styles.composer} onPress={() => setIsPostModalVisible(true)}>
+            <View style={styles.composerAvatar}>
+              <Text>👩🏻</Text>
+            </View>
+            <Text style={styles.placeholder}>Bạn muốn chia sẻ điều gì?</Text>
+            <Ionicons name="image-outline" size={20} color={C.primary} />
+          </Pressable>
+
+          {/* Posts List */}
+          {posts.map((post) => (
+            <View style={[L.card, styles.post]} key={post.name}>
+              <View style={styles.postHeader}>
+                <Text style={styles.postAvatar}>{post.avatar}</Text>
+                <View style={styles.postUser}>
+                  <Text style={styles.postName}>{post.name}</Text>
+                  <Text style={styles.postTime}>{post.time}</Text>
+                </View>
+                <Pressable onPress={handleNotImplemented}>
+                  <Ionicons name="ellipsis-horizontal" size={20} color={C.muted} />
+                </Pressable>
+              </View>
+
+              <Text style={styles.postText}>{post.text}</Text>
+              {post.image ? (
+                <View style={styles.postImage}>
+                  <Text style={styles.postImageText}>{post.image}</Text>
+                </View>
+              ) : null}
+
+              <View style={styles.postActions}>
+                <Pressable
+                  style={styles.action}
+                  onPress={() => setLiked((value) => (value.includes(post.name) ? value.filter((item) => item !== post.name) : [...value, post.name]))}
+                >
+                  <Ionicons name={liked.includes(post.name) ? 'heart' : 'heart-outline'} size={18} color={liked.includes(post.name) ? C.red : C.muted} />
+                  <Text style={styles.actionText}>{post.likes + (liked.includes(post.name) ? 1 : 0)}</Text>
+                </Pressable>
+                <Pressable style={styles.action} onPress={() => setActiveCommentPost(post.name)}>
+                  <Ionicons name="chatbubble-outline" size={17} color={C.muted} />
+                  <Text style={styles.actionText}>{post.comments}</Text>
+                </Pressable>
+                <Pressable style={styles.action} onPress={() => setActiveSharePost(post.name)}>
+                  <Ionicons name="share-social-outline" size={17} color={C.muted} />
+                  <Text style={styles.actionText}>Chia sẻ</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </>
+      )}
 
       {/* Modal Đăng Bài */}
       <Modal visible={isPostModalVisible} transparent animationType="slide">
@@ -117,9 +179,11 @@ export default function CommunityScreen() {
                 <Ionicons name="close" size={20} color={C.primary} />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalBody}>
-              <View style={styles.composerAvatar}><Text>👩🏻</Text></View>
+              <View style={styles.composerAvatar}>
+                <Text>👩🏻</Text>
+              </View>
               <TextInput
                 style={styles.modalInput}
                 placeholder="Bạn muốn chia sẻ điều gì?"
@@ -136,7 +200,7 @@ export default function CommunityScreen() {
                 <Ionicons name="image-outline" size={24} color={C.primary} />
                 <Text style={styles.attachText}>Thêm ảnh/video</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.postButton, postText.trim() ? styles.postButtonActive : null]}
                 onPress={handleShare}
                 disabled={!postText.trim()}
@@ -159,7 +223,9 @@ export default function CommunityScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.commentInputRow}>
-              <View style={styles.composerAvatar}><Text>👩🏻</Text></View>
+              <View style={styles.composerAvatar}>
+                <Text>👩🏻</Text>
+              </View>
               <TextInput
                 style={styles.commentInput}
                 placeholder="Viết bình luận..."
@@ -168,7 +234,7 @@ export default function CommunityScreen() {
                 onChangeText={setCommentText}
                 autoFocus
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.sendButton, commentText.trim() ? styles.sendButtonActive : null]}
                 onPress={submitComment}
                 disabled={!commentText.trim()}
@@ -195,8 +261,8 @@ export default function CommunityScreen() {
                 { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
                 { name: 'Zalo', icon: 'chatbubbles', color: '#0068FF' },
                 { name: 'Copy Link', icon: 'link', color: C.muted },
-                { name: 'Khác', icon: 'ellipsis-horizontal', color: C.muted }
-              ].map(platform => (
+                { name: 'Khác', icon: 'ellipsis-horizontal', color: C.muted },
+              ].map((platform) => (
                 <TouchableOpacity key={platform.name} style={styles.shareItem} onPress={() => submitShare(platform.name)}>
                   <View style={[styles.shareIconBox, { backgroundColor: platform.color + '15' }]}>
                     <Ionicons name={platform.icon as any} size={24} color={platform.color} />
@@ -208,6 +274,7 @@ export default function CommunityScreen() {
           </View>
         </View>
       </Modal>
+      <View style={{ height: 30 }} />
     </ScrollView>
   );
 }
@@ -217,7 +284,7 @@ const styles = StyleSheet.create({
   title: { color: C.text, fontSize: 24, fontWeight: '800' },
   subtitle: { color: C.muted, fontSize: 11, marginTop: 4 },
   search: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' },
-  tabs: { flexDirection: 'row', gap: 24, borderBottomWidth: 1, borderBottomColor: C.border, marginBottom: 13, paddingHorizontal: 20 },
+  tabs: { flexDirection: 'row', gap: 18, borderBottomWidth: 1, borderBottomColor: C.border, marginBottom: 13, paddingHorizontal: 20 },
   activeTab: { color: C.primary, fontSize: 12, fontWeight: '800', paddingBottom: 11, borderBottomWidth: 2, borderBottomColor: C.primary },
   tab: { color: C.muted, fontSize: 12, paddingBottom: 11 },
   composer: { ...L.card, flexDirection: 'row', alignItems: 'center', padding: 11, marginBottom: 13, marginHorizontal: 20 },
@@ -235,6 +302,28 @@ const styles = StyleSheet.create({
   postActions: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderTopColor: C.border, marginTop: 12, paddingTop: 4 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 12 },
   actionText: { color: C.muted, fontSize: 12, fontWeight: '600' },
+
+  challengeCard: { padding: 16, marginBottom: 16 },
+  challengeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  liveBadge: { backgroundColor: C.greenSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  liveBadgeText: { color: C.green, fontSize: 9, fontWeight: '800' },
+  challengeTime: { color: C.muted, fontSize: 10 },
+  challengeTitle: { color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 4 },
+  challengeDesc: { color: C.muted, fontSize: 11, marginBottom: 14 },
+  joinChallengeBtn: { backgroundColor: C.orange, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  joinChallengeText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
+  joinedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.greenSoft, borderRadius: 12, paddingVertical: 10, justifyContent: 'center' },
+  joinedText: { color: C.green, fontSize: 12, fontWeight: '700' },
+
+  leaderboardBox: { ...L.card, paddingHorizontal: 14 },
+  rankRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.border },
+  rankOneRow: { backgroundColor: '#FFFDF0', marginHorizontal: -14, paddingHorizontal: 14, borderRadius: 12 },
+  rankMedal: { width: 30, fontSize: 14, fontWeight: '800', color: C.muted },
+  rankAvatar: { fontSize: 24, marginRight: 10 },
+  rankFamily: { color: C.text, fontSize: 12, fontWeight: '700' },
+  rankStreak: { color: C.muted, fontSize: 10, marginTop: 2 },
+  rankPts: { color: C.text, fontSize: 13, fontWeight: '800' },
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, minHeight: 400 },
   bottomSheet: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40 },
@@ -257,5 +346,5 @@ const styles = StyleSheet.create({
   shareGrid: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10 },
   shareItem: { alignItems: 'center', gap: 8 },
   shareIconBox: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  shareText: { fontSize: 12, color: C.text, fontWeight: '500' }
+  shareText: { fontSize: 12, color: C.text, fontWeight: '500' },
 });

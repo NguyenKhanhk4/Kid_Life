@@ -3,9 +3,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View, Alert } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
 
+import { useNavigation } from '@react-navigation/native';
+
 const groups = {
   'Đồ ăn': [['🍎', 'Táo đỏ', 3], ['🍪', 'Bánh quy', 5], ['🍰', 'Bánh kem', 10], ['🍕', 'Pizza', 8], ['🍔', 'Burger', 9], ['🍣', 'Sushi', 12], ['🍜', 'Mì ramen', 6], ['🌽', 'Bắp ngô', 4]],
-  'Trang phục': [['🧢', 'Mũ len', 6], ['👕', 'Áo xanh', 7], ['🎈', 'Bóng bay', 5], ['👟', 'Giày thể thao', 9], ['🧤', 'Găng tay', 6], ['🧣', 'Khăn len', 8]],
+  'Trang phục': [['🧢', 'Mũ len', 6], ['👕', 'Áo xanh', 7], ['🎈', 'Bóng bay', 5], ['👟', 'Giày thể thao', 9], ['🧤', 'Găng tay', 6], ['Scarvis', 'Khăn len', 8]],
   'Nội thất': [['🛏️', 'Giường nhỏ', 12], ['🛁', 'Bồn tắm', 10], ['🪑', 'Ghế gỗ', 5], ['📺', 'Tivi', 15], ['🪴', 'Cây xanh', 7], ['🪆', 'Đồ trang trí', 9]]
 } as const;
 
@@ -20,6 +22,7 @@ const MOCK_REWARDS = [
 type Category = keyof typeof groups;
 
 export default function StoreScreen() {
+  const navigation = useNavigation<any>();
   const [storeType, setStoreType] = useState<'pet' | 'parent'>('pet');
   const [category, setCategory] = useState<Category>('Đồ ăn');
   const [coins, setCoins] = useState(1250); // XP Balance
@@ -52,10 +55,10 @@ export default function StoreScreen() {
           <Text style={styles.title}>Cửa hàng</Text>
           <Text style={styles.subtitle}>Mang những điều vui về cho Bun Bun</Text>
         </View>
-        <View style={styles.coins}>
+        <Pressable style={styles.coins} onPress={() => navigation.navigate('WalletScreen' as any)}>
           <Ionicons name="star" size={16} color={C.orange} />
-          <Text style={styles.coinsText}>{coins}</Text>
-        </View>
+          <Text style={styles.coinsText}>{coins} XP</Text>
+        </Pressable>
       </View>
 
       {/* Store Type Switch */}

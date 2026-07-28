@@ -104,23 +104,41 @@ export default function HomeParent() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 20, marginBottom: 24 }}>
+        <View style={{ flexDirection: 'row', gap: 8, marginHorizontal: 20, marginBottom: 24 }}>
           {/* Quick Actions (Tủ phần thưởng) */}
           <TouchableOpacity 
-            style={{ flex: 1, backgroundColor: `${COLORS.orange}12`, paddingVertical: 14, borderRadius: 16, alignItems: 'center', gap: 5 }}
+            style={{ flex: 1, backgroundColor: `${COLORS.orange}12`, paddingVertical: 12, borderRadius: 14, alignItems: 'center', gap: 4 }}
             onPress={() => navigation.navigate(Routes.Reward.Shop as any, { mode: 'parent' })}
           >
-            <Ionicons name="gift" size={22} color={COLORS.orange} />
-            <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.orange }}>Duyệt thưởng</Text>
+            <Ionicons name="gift" size={20} color={COLORS.orange} />
+            <Text style={{ fontSize: 10, fontWeight: '700', color: COLORS.orange }}>Duyệt thưởng</Text>
           </TouchableOpacity>
 
-          {/* Quick Actions (Điều ước của bé) */}
+          {/* Quick Actions (Duyệt điều ước) */}
           <TouchableOpacity 
-            style={{ flex: 1, backgroundColor: '#FF478512', paddingVertical: 14, borderRadius: 16, alignItems: 'center', gap: 5 }}
+            style={{ flex: 1, backgroundColor: '#FF478512', paddingVertical: 12, borderRadius: 14, alignItems: 'center', gap: 4 }}
             onPress={() => setIsWishesModalVisible(true)}
           >
-            <Text style={{ fontSize: 20 }}>🧞‍♂️</Text>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#FF4785' }}>Duyệt điều ước</Text>
+            <Text style={{ fontSize: 18 }}>🧞‍♂️</Text>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#FF4785' }}>Duyệt điều ước</Text>
+          </TouchableOpacity>
+
+          {/* Quick Actions (Thi đua gia đình) */}
+          <TouchableOpacity 
+            style={{ flex: 1, backgroundColor: '#8E54E912', paddingVertical: 12, borderRadius: 14, alignItems: 'center', gap: 4 }}
+            onPress={() => navigation.navigate(Routes.Features.Leaderboard as any)}
+          >
+            <Text style={{ fontSize: 18 }}>🏆</Text>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#8E54E9' }}>Thi đua</Text>
+          </TouchableOpacity>
+
+          {/* Quick Actions (Ngân hàng ảo) */}
+          <TouchableOpacity 
+            style={{ flex: 1, backgroundColor: '#2B44E812', paddingVertical: 12, borderRadius: 14, alignItems: 'center', gap: 4 }}
+            onPress={() => navigation.navigate(Routes.Features.VirtualBank as any)}
+          >
+            <Ionicons name="card" size={20} color="#2B44E8" />
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#2B44E8' }}>Ngân hàng ảo</Text>
           </TouchableOpacity>
         </View>
 
