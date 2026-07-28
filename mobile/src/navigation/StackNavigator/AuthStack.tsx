@@ -7,6 +7,7 @@ import { LoginScreen } from '@/modules/auth/screens/LoginScreen';
 import { RegisterScreen } from '@/modules/auth/screens/RegisterScreen';
 import { ForgotPasswordScreen } from '@/modules/auth/screens/ForgotPasswordScreen';
 import { OTPScreen } from '@/modules/auth/screens/OTPScreen';
+import { ResetPasswordScreen } from '@/modules/auth/screens/ResetPasswordScreen';
 import { OnboardingScreen } from '@/modules/startup/screens/OnboardingScreen';
 import { RoleSelectionScreen } from '@/modules/startup/screens/RoleSelectionScreen';
 
@@ -38,6 +39,11 @@ export const AuthStack = () => {
       <AuthStackNav.Screen
         name={Routes.Auth.OTP}
         component={OTPScreen}
+        options={{ headerShown: false }}
+      />
+      <AuthStackNav.Screen
+        name={Routes.Auth.ResetPassword}
+        component={ResetPasswordScreen}
         options={{ headerShown: false }}
       />
       <AuthStackNav.Screen

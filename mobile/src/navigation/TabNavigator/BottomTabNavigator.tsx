@@ -51,8 +51,6 @@ export const BottomTabNavigator = ({ role = 'parent' }: { role?: AppRole }) => {
       {() => {
         if (role === 'child') {
           if (config.route === Routes.Main.Home) return <ChildHomeScreen />;
-          if (config.route === Routes.Main.Community) return <WalletScreen />;
-          if (config.route === Routes.Main.Notifications) return <PetScreen />;
           if (config.route === Routes.Main.Tasks) return <ChildTasksScreen />;
           if (config.route === Routes.Main.Community) return <StoreScreen />;
           if (config.route === Routes.Main.Notifications) return <AchievementsScreen />;
