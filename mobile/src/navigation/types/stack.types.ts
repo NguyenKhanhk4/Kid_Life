@@ -33,6 +33,7 @@ export type AppStackParamList = {
   // Parent sub-screens
   [Routes.Parent.ApprovalQueue]: undefined;
   [Routes.Parent.ApprovalDetail]: { submissionId: string };
+  [Routes.Parent.Rewards]: undefined;
 
   // Lesson sub-screens
   [Routes.Lesson.Library]: undefined;
@@ -65,4 +66,6 @@ export type AppStackParamList = {
   [Routes.Features.CoParenting]: undefined;
   [Routes.Features.MultiStepTask]: undefined;
   [Routes.Features.PetEvolution]: undefined;
+  [Routes.Features.Pet]: undefined;
+  [Routes.Features.Wallet]: undefined;
 };

@@ -3,32 +3,32 @@ import { Pressable, ScrollView, StyleSheet, View, Text, Modal, TextInput, Alert,
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import {
+  issuePenalty,
+  setInterestRate as saveInterestRate,
+  useAppDispatch,
+  useAppSelector,
+} from '@/shared/store';
 
 export default function VirtualBankScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
+  const { child, wallet, penalties } = useAppSelector((state) => state.kidlife);
   const [activeTab, setActiveTab] = useState<'savings' | 'penalties'>('savings');
-  const [savingsBalance, setSavingsBalance] = useState(MOCK_KIDLIFE_DATA.wallet.savingsBalance);
-  const [interestRate, setInterestRate] = useState(MOCK_KIDLIFE_DATA.wallet.interestRate.toString());
+  const [interestRate, setInterestRate] = useState(wallet.interestRate.toString());
   const [showPenaltyModal, setShowPenaltyModal] = useState(false);
   const [penaltyReason, setPenaltyReason] = useState('');
   const [penaltyAmount, setPenaltyAmount] = useState('30');
-  const [penalties, setPenalties] = useState(MOCK_KIDLIFE_DATA.penalties);
 
   const handleIssuePenalty = () => {
     if (!penaltyReason.trim()) return;
-    const newP = {
-      id: `p_${Date.now()}`,
+    dispatch(issuePenalty({
       reason: penaltyReason,
-      amount: -Math.abs(Number(penaltyAmount) || 30),
-      emoji: '⚠️',
-      date: 'Vừa xong',
-      status: 'issued',
-    };
-    setPenalties([newP, ...penalties]);
+      amount: Math.abs(Number(penaltyAmount) || 30),
+    }));
     setShowPenaltyModal(false);
     setPenaltyReason('');
-    Alert.alert('✅ Xuất vé phạt thành công!', `Đã gửi vé phạt -${Math.abs(Number(penaltyAmount))} XP cho bé ${MOCK_KIDLIFE_DATA.child.name}.`);
+    Alert.alert('✅ Xuất vé phạt thành công!', `Đã gửi vé phạt -${Math.abs(Number(penaltyAmount) || 30)} XP cho bé ${child.name}.`);
   };
 
   return (
@@ -64,14 +64,14 @@ export default function VirtualBankScreen() {
             <View style={styles.bankCardHeader}>
               <View>
                 <Text style={styles.childNameLabel}>SỔ TIẾT KIỆM CỦA BÉ</Text>
-                <Text style={styles.childName}>Bé {MOCK_KIDLIFE_DATA.child.name}</Text>
+                <Text style={styles.childName}>Bé {child.name}</Text>
               </View>
               <View style={styles.bankIconWrap}>
                 <Text style={{ fontSize: 28 }}>🏦</Text>
               </View>
             </View>
 
-            <Text style={styles.savingsBalanceText}>{savingsBalance.toLocaleString('vi-VN')} <Text style={{ fontSize: 18 }}>XP</Text></Text>
+            <Text style={styles.savingsBalanceText}>{wallet.savingsBalance.toLocaleString('vi-VN')} <Text style={{ fontSize: 18 }}>XP</Text></Text>
 
             <View style={styles.rateRow}>
               <Text style={styles.rateLabel}>Lãi suất hiện tại:</Text>
@@ -80,7 +80,7 @@ export default function VirtualBankScreen() {
 
             <View style={styles.tickerBox}>
               <Ionicons name="trending-up" size={16} color={C.green} />
-              <Text style={styles.tickerText}>Tiền lãi dự kiến hôm nay: <Text style={{ color: C.green, fontWeight: '800' }}>+{MOCK_KIDLIFE_DATA.wallet.dailyInterest} XP</Text></Text>
+              <Text style={styles.tickerText}>Tiền lãi dự kiến hôm nay: <Text style={{ color: C.green, fontWeight: '800' }}>+{wallet.dailyInterest} XP</Text></Text>
             </View>
           </View>
 
@@ -99,7 +99,10 @@ export default function VirtualBankScreen() {
               />
             </View>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={() => Alert.alert('Đã lưu', 'Mức lãi suất mới đã được áp dụng cho sổ tiết kiệm của bé!')}>
+            <TouchableOpacity style={styles.saveBtn} onPress={() => {
+              dispatch(saveInterestRate(Number(interestRate) || 0));
+              Alert.alert('Đã lưu', 'Mức lãi suất mới đã được áp dụng cho sổ tiết kiệm của bé!');
+            }}>
               <Text style={styles.saveBtnText}>Lưu thiết lập lãi suất</Text>
             </TouchableOpacity>
           </View>
@@ -120,7 +123,7 @@ export default function VirtualBankScreen() {
               <Text style={{ fontSize: 32, marginRight: 12 }}>{item.emoji}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.penaltyReason}>{item.reason}</Text>
-                <Text style={styles.penaltyDate}>{item.date} • Áp dụng cho {MOCK_KIDLIFE_DATA.child.name}</Text>
+                <Text style={styles.penaltyDate}>{item.date} • Áp dụng cho {child.name}</Text>
               </View>
               <Text style={styles.penaltyAmount}>{item.amount} XP</Text>
             </View>

@@ -4,29 +4,43 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-
-const MOCK_MISSION = {
-  id: '1', title: 'Đánh răng trước khi ngủ', description: 'Bé nhớ lấy kem bằng hạt đậu và đánh răng trong 2 phút nhé. Xong thì nhờ mẹ chụp hình nộp lên nha!', childId: '1', skill: 'Vệ sinh', rewardPoints: 30, dueDate: 'Hôm nay, 21:00', status: 'todo', emoji: '🪥', aiVideoUrl: true,
-  checklist: [{ id: '1', text: 'Lấy bàn chải và kem', isDone: false }, { id: '2', text: 'Đánh đủ 2 phút', isDone: false }, { id: '3', text: 'Súc miệng sạch', isDone: false }]
-};
+import { submitTask, toggleSubtask, useAppDispatch, useAppSelector } from '@/shared/store';
 
 export default function MissionDetailScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
   const route = useRoute<any>();
   const { missionId = '1', mode = 'child' } = route.params ?? {};
-  
-  const [mission, setMission] = useState(MOCK_MISSION);
+  const tasks = useAppSelector((state) => state.kidlife.tasks);
+  const storedTask = tasks.find((task) => task.id === missionId) ?? tasks[0];
   const [showUpload, setShowUpload] = useState(false);
 
   const toggleCheck = (idx: number) => {
-    const newChecklist = [...mission.checklist];
-    newChecklist[idx].isDone = !newChecklist[idx].isDone;
-    setMission({ ...mission, checklist: newChecklist });
+    const subtask = storedTask?.subtasks[idx];
+    if (storedTask && subtask) {
+      dispatch(toggleSubtask({ taskId: storedTask.id, subtaskId: subtask.id }));
+    }
   };
 
+  if (!storedTask) {
+    return <View style={[L.screen, styles.emptyState]}><Text style={styles.title}>Không tìm thấy nhiệm vụ</Text></View>;
+  }
+
+  const mission = {
+    id: storedTask.id,
+    title: storedTask.title,
+    description: 'Bé hoàn thành lần lượt từng bước, sau đó chụp ảnh hoặc quay video để ba mẹ duyệt nhé.',
+    skill: storedTask.category,
+    rewardPoints: storedTask.rewardXP,
+    dueDate: storedTask.time,
+    emoji: storedTask.icon,
+    aiVideoUrl: true,
+    checklist: storedTask.subtasks.map((item) => ({ id: item.id, text: item.title, isDone: item.done })),
+  };
   const allChecked = mission.checklist.every(i => i.isDone);
 
   const handleSubmit = () => {
+    dispatch(submitTask({ taskId: mission.id }));
     setShowUpload(false);
     Alert.alert('Thành công', 'Đã nộp bằng chứng! Chờ ba mẹ duyệt nhé.', [
       { text: 'OK', onPress: () => navigation.goBack() }
@@ -132,6 +146,7 @@ export default function MissionDetailScreen() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 12 },
+  emptyState: { alignItems: 'center', justifyContent: 'center' },
   back: { width: 42, height: 42, borderRadius: 22, backgroundColor: '#E4E9FF', alignItems: 'center', justifyContent: 'center' },
   headerTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
   editBtn: { width: 42, height: 42, borderRadius: 22, backgroundColor: '#E4E9FF', alignItems: 'center', justifyContent: 'center' },

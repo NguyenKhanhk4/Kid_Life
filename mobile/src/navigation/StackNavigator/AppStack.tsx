@@ -18,6 +18,7 @@ import ChangePasswordScreen from '@/modules/auth/screens/ChangePasswordScreen';
 // Parent sub-screens
 import ApprovalQueueScreen from '@/modules/parent/screens/ApprovalQueueScreen';
 import ApprovalDetailScreen from '@/modules/parent/screens/ApprovalDetailScreen';
+import RewardsParentScreen from '@/modules/parent/screens/RewardsParentScreen';
 
 // Lesson screens
 import LessonLibraryScreen from '@/modules/lesson/screens/LessonLibraryScreen';
@@ -85,6 +86,7 @@ export const AppStack = ({ route }: AppStackProps) => {
       {/* Parent Sub-screens */}
       <AppStackNav.Screen name={Routes.Parent.ApprovalQueue} component={ApprovalQueueScreen} />
       <AppStackNav.Screen name={Routes.Parent.ApprovalDetail} component={ApprovalDetailScreen} />
+      <AppStackNav.Screen name={Routes.Parent.Rewards} component={RewardsParentScreen} />
 
       {/* Lesson Sub-screens */}
       <AppStackNav.Screen name={Routes.Lesson.Library} component={LessonLibraryScreen} />
@@ -104,8 +106,8 @@ export const AppStack = ({ route }: AppStackProps) => {
       <AppStackNav.Screen name={Routes.Reward.Shop} component={RewardShopScreen} />
 
       {/* Pet Sub-screens */}
-      <AppStackNav.Screen name="PetScreen" component={PetScreen as any} />
-      <AppStackNav.Screen name="WalletScreen" component={WalletScreen as any} />
+      <AppStackNav.Screen name={Routes.Features.Pet} component={PetScreen} />
+      <AppStackNav.Screen name={Routes.Features.Wallet} component={WalletScreen} />
 
       {/* Feature Sub-screens (NEW) */}
       <AppStackNav.Screen name={Routes.Features.Hub} component={FeaturesHubScreen} />

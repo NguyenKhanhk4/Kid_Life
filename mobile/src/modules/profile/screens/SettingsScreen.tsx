@@ -19,7 +19,18 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: () => {
           navigation.dispatch(
-            CommonActions.reset({ index: 0, routes: [{ name: Navigators.Auth }] })
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: Navigators.Auth,
+                  state: {
+                    index: 0,
+                    routes: [{ name: Routes.Auth.Login }],
+                  },
+                },
+              ],
+            }),
           );
         },
       },

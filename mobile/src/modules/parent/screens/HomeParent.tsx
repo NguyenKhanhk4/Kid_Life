@@ -13,20 +13,13 @@ import { Ionicons, FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/v
 import { useNavigation } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { styles, COLORS } from './HomeParent.styles';
+import { reviewWish, useAppDispatch, useAppSelector } from '@/shared/store';
 
 // Mock data
 const MOCK_CHILDREN = [
-  { id: 1, name: 'Vũ Lương', avatar: '🐥' },
+  { id: 1, name: 'Minh Anh', avatar: '🧒' },
   { id: 2, name: 'Thảo My', avatar: '🐥' },
   { id: 3, name: 'Nhật Linh', avatar: '🐥' },
-];
-
-const MOCK_TASKS = [
-  { id: 1, title: 'Dọn dẹp đồ chơi', stars: 1, xp: 30, completed: true, emoji: '🧸' },
-  { id: 2, title: 'Tự gấp quần áo của mình', stars: 2, xp: 50, completed: true, emoji: '👕' },
-  { id: 3, title: 'Lau bàn sau bữa ăn', stars: 1, xp: 30, completed: false, emoji: '🪑' },
-  { id: 4, title: 'Tự đánh răng trước khi đi ngủ', stars: 1, xp: 30, completed: false, emoji: '🦷' },
-  { id: 5, title: 'Xếp sách vở cho vào cặp sách', stars: 1, xp: 30, completed: false, emoji: '📔' },
 ];
 
 const MOCK_BADGES = [
@@ -39,14 +32,12 @@ const MOCK_BADGES = [
 
 export default function HomeParent() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
+  const { child, tasks, wishes } = useAppSelector((state) => state.kidlife);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedChild, setSelectedChild] = useState(MOCK_CHILDREN[0]);
 
   const [isWishesModalVisible, setIsWishesModalVisible] = useState(false);
-  const [wishes, setWishes] = useState([
-    { id: 'w1', child: 'Minh Anh', text: 'Con muốn cuối tuần đi nhà bóng', cost: 50, time: 'Hôm nay, 19:30', status: 'pending' },
-    { id: 'w2', child: 'Minh Anh', text: 'Mua hộp lego siêu nhân', cost: 50, time: 'Hôm qua, 15:20', status: 'pending' }
-  ]);
   const [rejectPromptVisible, setRejectPromptVisible] = useState(false);
   const [rejectingWishId, setRejectingWishId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -78,7 +69,7 @@ export default function HomeParent() {
           <View style={styles.xpRow}>
             <View style={styles.xpLeft}>
               <Ionicons name="star" size={16} color={COLORS.yellow} />
-              <Text style={styles.xpText}> 1,250 XP</Text>
+              <Text style={styles.xpText}> {child.xp.toLocaleString('vi-VN')} XP</Text>
             </View>
             <Text style={styles.levelText}>Cấp 5 → Cấp 6: 1,750 XP</Text>
           </View>
@@ -88,7 +79,7 @@ export default function HomeParent() {
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <FontAwesome5 name="fire" size={24} color="#FF6B6B" />
-              <Text style={styles.statNumber}>12</Text>
+              <Text style={styles.statNumber}>{child.streak}</Text>
               <Text style={styles.statLabel}>Ngày liên tiếp</Text>
             </View>
             <View style={styles.statBox}>
@@ -108,7 +99,7 @@ export default function HomeParent() {
           {/* Quick Actions (Tủ phần thưởng) */}
           <TouchableOpacity 
             style={{ flex: 1, backgroundColor: `${COLORS.orange}12`, paddingVertical: 12, borderRadius: 14, alignItems: 'center', gap: 4 }}
-            onPress={() => navigation.navigate(Routes.Reward.Shop as any, { mode: 'parent' })}
+            onPress={() => navigation.navigate(Routes.Parent.Rewards as any)}
           >
             <Ionicons name="gift" size={20} color={COLORS.orange} />
             <Text style={{ fontSize: 10, fontWeight: '700', color: COLORS.orange }}>Duyệt thưởng</Text>
@@ -149,7 +140,7 @@ export default function HomeParent() {
             <Text style={styles.sectionTitle}>Nhiệm vụ hôm nay</Text>
           </View>
           <View style={styles.taskBadge}>
-            <Text style={styles.taskBadgeText}>2/5 hoàn thành</Text>
+            <Text style={styles.taskBadgeText}>{tasks.filter((task) => task.status === 'done').length}/{tasks.length} hoàn thành</Text>
           </View>
         </View>
 
@@ -164,16 +155,16 @@ export default function HomeParent() {
         </View>
 
         <View style={styles.taskList}>
-          {MOCK_TASKS.map((task) => (
+          {tasks.map((task) => (
             <View
               key={task.id}
               style={[
                 styles.taskItem,
-                { backgroundColor: task.completed ? COLORS.taskCompleted : COLORS.taskPending },
+                { backgroundColor: task.status === 'done' ? COLORS.taskCompleted : COLORS.taskPending },
               ]}
             >
               <View style={styles.taskIconContainer}>
-                <Text style={styles.taskEmoji}>{task.emoji}</Text>
+                <Text style={styles.taskEmoji}>{task.icon}</Text>
                 {/* TODO: Replace with Figma asset Image */}
               </View>
               <View style={styles.taskInfo}>
@@ -181,10 +172,10 @@ export default function HomeParent() {
                 <View style={styles.taskRewards}>
                   <View style={styles.rewardStar}>
                     <Ionicons name="star" size={12} color={COLORS.orange} />
-                    <Text style={styles.rewardStarText}>{task.stars}</Text>
+                    <Text style={styles.rewardStarText}>{Math.max(1, Math.round(task.rewardXP / 30))}</Text>
                   </View>
                   <View style={styles.rewardXp}>
-                    <Text style={styles.rewardXpText}>+{task.xp} XP</Text>
+                    <Text style={styles.rewardXpText}>{task.xp}</Text>
                   </View>
                 </View>
               </View>
@@ -353,7 +344,7 @@ export default function HomeParent() {
                       <TouchableOpacity 
                         style={{ flex: 1, backgroundColor: '#FFF', paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: COLORS.green }}
                         onPress={() => {
-                          setWishes(w => w.map(item => item.id === wish.id ? {...item, status: 'approved'} : item));
+                          dispatch(reviewWish({ wishId: wish.id, status: 'approved' }));
                           Alert.alert('Chấp thuận', 'Bé sẽ rất vui khi biết điều này!');
                         }}
                       >
@@ -384,7 +375,7 @@ export default function HomeParent() {
                         Alert.alert('Chuyển thành Phần thưởng', 'Điều ước này sẽ được đưa vào cửa hàng với giá do bạn định mức.', [
                           { text: 'Hủy', style: 'cancel' },
                           { text: 'Tạo phần thưởng', onPress: () => {
-                            setWishes(w => w.map(item => item.id === wish.id ? {...item, status: 'converted'} : item));
+                            dispatch(reviewWish({ wishId: wish.id, status: 'converted' }));
                             Alert.alert('Thành công', 'Đã chuyển vào Cửa hàng phần thưởng!');
                           }}
                         ]);
@@ -429,7 +420,7 @@ export default function HomeParent() {
                 style={{ flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: COLORS.orange, alignItems: 'center' }}
                 onPress={() => {
                   if (rejectingWishId) {
-                    setWishes(w => w.map(item => item.id === rejectingWishId ? {...item, status: 'rejected'} : item));
+                    dispatch(reviewWish({ wishId: rejectingWishId, status: 'rejected', feedback: rejectReason }));
                   }
                   setRejectPromptVisible(false);
                   setRejectReason('');

@@ -2,52 +2,37 @@ import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
-
-type Subtask = { id: string; title: string; done: boolean };
-type Mission = {
-  id: string;
-  icon: string;
-  title: string;
-  time: string;
-  xp: string;
-  category: string;
-  subtasks: Subtask[];
-};
+import {
+  KidLifeTask,
+  submitTask,
+  toggleSubtask,
+  useAppDispatch,
+  useAppSelector,
+} from '@/shared/store';
+import { ScreenBackButton } from '@/shared/components';
 
 export default function ChildTasksScreen() {
-  const [taskList, setTaskList] = useState<Mission[]>(MOCK_KIDLIFE_DATA.todayTasks);
-  const [selected, setSelected] = useState<Mission | null>(null);
+  const dispatch = useAppDispatch();
+  const { child, wallet, tasks: taskList } = useAppSelector((state) => state.kidlife);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = taskList.find((task) => task.id === selectedId) ?? null;
   const [submitted, setSubmitted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
   const handleToggleSubtask = (missionId: string, subtaskId: string) => {
-    setTaskList((prev) =>
-      prev.map((m) => {
-        if (m.id !== missionId) return m;
-        const updatedSubtasks = m.subtasks.map((st) => (st.id === subtaskId ? { ...st, done: !st.done } : st));
-        const allDone = updatedSubtasks.every((st) => st.done);
-
-        if (allDone) {
-          setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 2500);
-          Alert.alert('🎉 Xuất sắc!', `Bé đã tick đủ tất cả các bước của "${m.title}"! Nhận ${m.xp}!`);
-        }
-
-        return { ...m, subtasks: updatedSubtasks };
-      })
+    const mission = taskList.find((task) => task.id === missionId);
+    const willComplete = mission?.subtasks.every((subtask) =>
+      subtask.id === subtaskId ? !subtask.done : subtask.done,
     );
-
-    if (selected && selected.id === missionId) {
-      setSelected((prevSelected) => {
-        if (!prevSelected) return null;
-        const updatedSubtasks = prevSelected.subtasks.map((st) => (st.id === subtaskId ? { ...st, done: !st.done } : st));
-        return { ...prevSelected, subtasks: updatedSubtasks };
-      });
+    dispatch(toggleSubtask({ taskId: missionId, subtaskId }));
+    if (mission && willComplete) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 2500);
+      Alert.alert('🎉 Xuất sắc!', `Bé đã tick đủ tất cả các bước của "${mission.title}"! Hãy nộp bằng chứng để nhận ${mission.xp}.`);
     }
   };
 
-  const getCompletedCount = (subtasks: Subtask[]) => subtasks.filter((st) => st.done).length;
+  const getCompletedCount = (subtasks: KidLifeTask['subtasks']) => subtasks.filter((st) => st.done).length;
 
   return (
     <ScrollView style={L.screen} contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
@@ -61,9 +46,10 @@ export default function ChildTasksScreen() {
       {/* Top Section Banner */}
       <View style={styles.topSection}>
         <View style={styles.topBar}>
+          <ScreenBackButton />
           <View style={styles.starPill}>
             <Ionicons name="star" size={16} color={C.orange} />
-            <Text style={styles.starText}>{MOCK_KIDLIFE_DATA.child.xp.toLocaleString()} XP</Text>
+            <Text style={styles.starText}>{wallet.balance.toLocaleString()} XP</Text>
           </View>
           <View style={styles.badgePill}>
             <Ionicons name="map" size={16} color={C.primary} />
@@ -73,7 +59,7 @@ export default function ChildTasksScreen() {
 
         <View style={styles.mascotContainer}>
           <View style={styles.speechBubble}>
-            <Text style={styles.speechText}>Chào {MOCK_KIDLIFE_DATA.child.name}! Chạm vào nhiệm vụ để tick từng bước nhé!</Text>
+            <Text style={styles.speechText}>Chào {child.name}! Chạm vào nhiệm vụ để tick từng bước nhé!</Text>
             <View style={styles.speechArrow} />
           </View>
           <Text style={styles.mascotEmoji}>🐹</Text>
@@ -86,7 +72,7 @@ export default function ChildTasksScreen() {
           <Text style={styles.sectionTitle}>Nhiệm vụ chuỗi (Checklist)</Text>
         </View>
         <View style={styles.progressPill}>
-          <Text style={styles.progressText}>1/4 hoàn thành</Text>
+          <Text style={styles.progressText}>{taskList.filter((task) => task.status === 'done').length}/{taskList.length} hoàn thành</Text>
         </View>
       </View>
 
@@ -126,8 +112,8 @@ export default function ChildTasksScreen() {
               <TouchableOpacity
                 style={[styles.actionBtn, isFullyDone && styles.actionBtnDone]}
                 onPress={() => {
-                  setSelected(mission);
-                  setSubmitted(false);
+                  setSelectedId(mission.id);
+                  setSubmitted(mission.status === 'submitted');
                 }}
               >
                 <Text style={styles.actionBtnText}>{isFullyDone ? '✅ Hoàn thành chuỗi' : 'Thực hiện chuỗi bước'}</Text>
@@ -140,7 +126,7 @@ export default function ChildTasksScreen() {
       <View style={{ height: 30 }} />
 
       {/* Multi-step Checklist Modal */}
-      <Modal visible={!!selected} transparent animationType="slide" onRequestClose={() => setSelected(null)}>
+      <Modal visible={!!selected} transparent animationType="slide" onRequestClose={() => setSelectedId(null)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modal}>
             <View style={styles.modalHandle} />
@@ -149,7 +135,7 @@ export default function ChildTasksScreen() {
                 <Text style={styles.modalTitle}>{selected?.icon} {selected?.title}</Text>
                 <Text style={styles.modalSubtitle}>Nhiệm vụ chuỗi multi-step • {selected?.xp}</Text>
               </View>
-              <Pressable onPress={() => setSelected(null)}>
+              <Pressable onPress={() => setSelectedId(null)}>
                 <Ionicons name="close-circle" size={26} color={C.muted} />
               </Pressable>
             </View>
@@ -182,7 +168,20 @@ export default function ChildTasksScreen() {
               <Text style={styles.evidenceText}>{submitted ? 'Đã gửi ảnh minh chứng cho ba mẹ' : 'Chụp ảnh để ba mẹ duyệt'}</Text>
             </View>
 
-            <Pressable style={[styles.submitButton, submitted && styles.submittedButton]} onPress={() => setSubmitted(true)}>
+            <Pressable
+              disabled={!selected?.subtasks.every((subtask) => subtask.done) || submitted}
+              style={[
+                styles.submitButton,
+                submitted && styles.submittedButton,
+                !selected?.subtasks.every((subtask) => subtask.done) && { opacity: 0.45 },
+              ]}
+              onPress={() => {
+                if (!selected) return;
+                dispatch(submitTask({ taskId: selected.id }));
+                setSubmitted(true);
+                Alert.alert('Đã nộp bằng chứng', 'Ba mẹ đã nhận được thông báo và sẽ duyệt bài cho bé.');
+              }}
+            >
               <Text style={styles.submitText}>{submitted ? 'Đã gửi cho ba mẹ' : 'Nộp bằng chứng'}</Text>
               <Ionicons name={submitted ? 'checkmark' : 'arrow-forward'} size={18} color={submitted ? C.green : '#FFF'} />
             </Pressable>

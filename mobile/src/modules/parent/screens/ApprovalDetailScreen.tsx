@@ -3,17 +3,17 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert, Modal 
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-
-const MOCK: Record<string, any> = {
-  '1': { missionTitle: 'Đánh răng trước khi ngủ', childName: 'Minh Anh', childAvatar: '🧒', submittedAt: 'Hôm nay, 20:45', note: 'Con đã đánh răng xong rồi ạ!', aiConfidence: 92, aiLabel: 'Đánh răng', aiRecommendation: 'approve', checklist: ['Lấy bàn chải ✅', 'Đánh 2 phút ✅'], evidenceCount: 2, emoji: '🪥' },
-  '2': { missionTitle: 'Dọn dẹp đồ chơi', childName: 'Thảo My', childAvatar: '👧', submittedAt: 'Hôm nay, 18:30', note: '', aiConfidence: 67, aiLabel: 'Dọn dẹp', aiRecommendation: 'review', checklist: ['Thu đồ chơi ✅', 'Xếp ngăn nắp ❌'], evidenceCount: 1, emoji: '🧸' },
-};
+import { reviewSubmission, useAppDispatch, useAppSelector } from '@/shared/store';
 
 export default function ApprovalDetailScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
   const route = useRoute<any>();
-  const subId = route.params?.submissionId ?? '1';
-  const sub = MOCK[subId] ?? MOCK['1'];
+  const subId = route.params?.submissionId;
+  const { submissions, tasks } = useAppSelector((state) => state.kidlife);
+  const sub = submissions.find((item) => item.id === subId) ?? submissions[0];
+  const task = tasks.find((item) => item.id === sub?.taskId);
+  const checklist = task?.subtasks.map((item) => `${item.title} ${item.done ? '✅' : '❌'}`) ?? [];
 
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -22,18 +22,28 @@ export default function ApprovalDetailScreen() {
   const getConfidenceColor = (c: number) => c >= 80 ? C.green : c >= 50 ? C.orange : C.red;
 
   const handleApprove = () => {
+    if (!sub) return;
+    dispatch(reviewSubmission({ submissionId: sub.id, approved: true }));
     Alert.alert('Đã duyệt!', `Bé ${sub.childName} được cộng điểm thưởng 🎉`, [
       { text: 'OK', onPress: () => navigation.goBack() },
     ]);
   };
 
   const handleReject = () => {
+    if (!sub) return;
     if (!rejectReason.trim()) { Alert.alert('Lỗi', 'Vui lòng nhập lý do từ chối'); return; }
+    dispatch(reviewSubmission({ submissionId: sub.id, approved: false, feedback: rejectReason }));
     setShowRejectModal(false);
     Alert.alert('Đã từ chối', 'Bé sẽ được thông báo và có thể nộp lại', [
       { text: 'OK', onPress: () => navigation.goBack() },
     ]);
   };
+
+  if (!sub) {
+    return <View style={[L.screen, styles.emptyState]}><Text style={styles.missionTitle}>Không tìm thấy bằng chứng</Text></View>;
+  }
+
+  const aiRecommendation = sub.aiConfidence >= 80 ? 'approve' : 'review';
 
   return (
     <View style={L.screen}>
@@ -58,7 +68,7 @@ export default function ApprovalDetailScreen() {
         </View>
 
         {/* Evidence preview */}
-        <Text style={L.sectionTitle}>Bằng chứng ({sub.evidenceCount} ảnh)</Text>
+        <Text style={L.sectionTitle}>Bằng chứng (1 ảnh)</Text>
         <Pressable style={styles.evidenceGrid} onPress={() => setShowImageModal(true)}>
           <View style={styles.evidencePlaceholder}>
             <Ionicons name="image" size={40} color={C.muted} />
@@ -71,16 +81,14 @@ export default function ApprovalDetailScreen() {
         </Pressable>
 
         {/* Note from child */}
-        {sub.note ? (
-          <View style={[L.card, styles.noteCard]}>
-            <Text style={styles.noteLabel}>💬 Ghi chú từ bé:</Text>
-            <Text style={styles.noteText}>{sub.note}</Text>
-          </View>
-        ) : null}
+        <View style={[L.card, styles.noteCard]}>
+          <Text style={styles.noteLabel}>💬 Ghi chú từ bé:</Text>
+          <Text style={styles.noteText}>Con đã hoàn thành đủ các bước ạ!</Text>
+        </View>
 
         {/* Checklist */}
         <Text style={[L.sectionTitle, { marginTop: 14 }]}>Checklist</Text>
-        {sub.checklist.map((item: string, i: number) => (
+        {checklist.map((item, i) => (
           <View key={i} style={styles.checkItem}>
             <Text style={styles.checkText}>{item}</Text>
           </View>
@@ -106,25 +114,25 @@ export default function ApprovalDetailScreen() {
           </View>
           <View style={styles.aiRow}>
             <Text style={styles.aiLabel}>Đề xuất:</Text>
-            <View style={[styles.recPill, sub.aiRecommendation === 'approve' ? { backgroundColor: C.greenSoft } : { backgroundColor: C.orangeSoft }]}>
-              <Text style={[styles.recText, sub.aiRecommendation === 'approve' ? { color: C.green } : { color: C.orange }]}>
-                {sub.aiRecommendation === 'approve' ? '✅ Nên duyệt' : '⚠️ Cần xem xét'}
+            <View style={[styles.recPill, aiRecommendation === 'approve' ? { backgroundColor: C.greenSoft } : { backgroundColor: C.orangeSoft }]}>
+              <Text style={[styles.recText, aiRecommendation === 'approve' ? { color: C.green } : { color: C.orange }]}>
+                {aiRecommendation === 'approve' ? '✅ Nên duyệt' : '⚠️ Cần xem xét'}
               </Text>
             </View>
           </View>
         </View>
 
         {/* Action buttons */}
-        <View style={styles.actionRow}>
+        {sub.status === 'pending' && <View style={styles.actionRow}>
           <Pressable style={styles.rejectBtn} onPress={() => setShowRejectModal(true)}>
             <Ionicons name="close-circle" size={20} color={C.red} />
             <Text style={styles.rejectBtnText}>Từ chối</Text>
           </Pressable>
           <Pressable style={styles.approveBtn} onPress={handleApprove}>
             <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-            <Text style={styles.approveBtnText}>Duyệt</Text>
+            <Text style={styles.approveBtnText}>Duyệt & Tặng {sub.rewardXP} XP</Text>
           </Pressable>
-        </View>
+        </View>}
         <View style={{ height: 40 }} />
       </ScrollView>
 
@@ -175,6 +183,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 12 },
   back: { width: 42, height: 42, borderRadius: 22, backgroundColor: '#E4E9FF', alignItems: 'center', justifyContent: 'center' },
   headerTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
+  emptyState: { alignItems: 'center', justifyContent: 'center' },
   missionCard: { alignItems: 'center', padding: 20, marginBottom: 18 },
   missionIcon: { width: 64, height: 64, borderRadius: 20, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   missionTitle: { color: C.text, fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 8 },

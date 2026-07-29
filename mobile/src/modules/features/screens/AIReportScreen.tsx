@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, Text } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
+import { addTask, useAppDispatch } from '@/shared/store';
 
 const radarData = { tuLap: 85, sucKhoe: 45, triTue: 72, tinhCam: 90 };
 const prevMonth = { tuLap: 78, sucKhoe: 62, triTue: 65, tinhCam: 82 };
@@ -23,7 +24,9 @@ const monthlyTrend = [
 
 export default function AIReportScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<'overview' | 'detail'>('overview');
+  const [recommendationApplied, setRecommendationApplied] = useState(false);
 
   const skills = [
     { key: 'tuLap', label: 'Tự lập', icon: '🏠', value: radarData.tuLap, prev: prevMonth.tuLap, color: C.primary, desc: 'Làm việc cá nhân' },
@@ -185,6 +188,27 @@ export default function AIReportScreen() {
           <Text style={styles.aiTitle}>AI Khuyến nghị</Text>
         </View>
         <Text style={styles.aiText}>{recommendation}</Text>
+        <Pressable
+          disabled={recommendationApplied}
+          style={[styles.applyButton, recommendationApplied && styles.applyButtonDone]}
+          onPress={() => {
+            dispatch(addTask({
+              title: 'Đánh răng & Ngủ trước 21h',
+              time: '20:30 - 21:00',
+              rewardXP: 50,
+              category: 'Sức khỏe',
+              icon: '🪥',
+              subtasks: ['Đánh răng đủ 2 phút', 'Chuẩn bị giường ngủ', 'Lên giường trước 21h'],
+            }));
+            setRecommendationApplied(true);
+            Alert.alert('Đã phát hành nhiệm vụ', 'Nhiệm vụ AI đã xuất hiện ngay trong danh sách của bé.');
+          }}
+        >
+          <Ionicons name={recommendationApplied ? 'checkmark-circle' : 'sparkles'} size={18} color={recommendationApplied ? C.green : '#FFF'} />
+          <Text style={[styles.applyButtonText, recommendationApplied && styles.applyButtonTextDone]}>
+            {recommendationApplied ? 'Đã áp dụng gợi ý' : 'Áp dụng gợi ý nhiệm vụ AI'}
+          </Text>
+        </Pressable>
       </View>
 
       <View style={{ height: 40 }} />
@@ -256,4 +280,8 @@ const styles = StyleSheet.create({
   aiIcon: { fontSize: 22 },
   aiTitle: { color: C.primary, fontSize: 15, fontWeight: '800' },
   aiText: { color: '#2A4A7F', fontSize: 13, lineHeight: 20 },
+  applyButton: { marginTop: 16, minHeight: 48, borderRadius: 13, backgroundColor: C.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14 },
+  applyButtonDone: { backgroundColor: C.greenSoft },
+  applyButtonText: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+  applyButtonTextDone: { color: C.green },
 });

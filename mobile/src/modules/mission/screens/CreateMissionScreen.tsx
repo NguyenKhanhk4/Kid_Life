@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
+import { addTask, useAppDispatch } from '@/shared/store';
 
 const MOCK_CHILDREN = [
   { id: '1', name: 'Minh Anh', avatar: '🧒' },
@@ -14,6 +15,7 @@ const SKILLS = ['Vệ sinh', 'Tự lập', 'Giao tiếp', 'Cảm xúc'];
 
 export default function CreateMissionScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
   const route = useRoute<any>();
   const editMode = !!route.params?.editMissionId;
 
@@ -22,6 +24,7 @@ export default function CreateMissionScreen() {
   const [childId, setChildId] = useState('1');
   const [skill, setSkill] = useState('Vệ sinh');
   const [points, setPoints] = useState('30');
+  const [time, setTime] = useState('18:30 - 19:00');
   const [checklist, setChecklist] = useState(editMode ? ['Lấy bàn chải và kem', 'Đánh đủ 2 phút'] : ['']);
 
   const updateChecklist = (text: string, index: number) => {
@@ -31,6 +34,19 @@ export default function CreateMissionScreen() {
   };
 
   const handleSave = () => {
+    if (!title.trim()) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên nhiệm vụ.');
+      return;
+    }
+    if (!editMode) {
+      dispatch(addTask({
+        title,
+        time,
+        rewardXP: Math.max(1, Number(points) || 30),
+        category: skill,
+        subtasks: checklist,
+      }));
+    }
     Alert.alert('Thành công', editMode ? 'Đã cập nhật nhiệm vụ' : 'Đã tạo nhiệm vụ mới', [
       { text: 'OK', onPress: () => navigation.goBack() }
     ]);
@@ -83,6 +99,7 @@ export default function CreateMissionScreen() {
         </ScrollView>
 
         <Field label="Điểm thưởng (XP)" placeholder="VD: 30" value={points} onChangeText={setPoints} keyboardType="numeric" />
+        <Field label="Khung giờ thực hiện" placeholder="VD: 18:30 - 19:00" value={time} onChangeText={setTime} />
 
         {/* Checklist */}
         <Text style={styles.sectionLabel}>Checklist (Các bước bé cần làm)</Text>
@@ -107,7 +124,7 @@ export default function CreateMissionScreen() {
       {/* Footer */}
       <View style={styles.footer}>
         <Pressable style={styles.submitBtn} onPress={handleSave}>
-          <Text style={styles.submitBtnText}>{editMode ? 'Lưu thay đổi' : 'Tạo nhiệm vụ'}</Text>
+          <Text style={styles.submitBtnText}>{editMode ? 'Lưu thay đổi' : 'Phát hành nhiệm vụ'}</Text>
         </Pressable>
       </View>
     </View>

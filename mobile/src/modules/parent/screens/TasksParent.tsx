@@ -12,6 +12,7 @@ import { Ionicons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { styles, COLORS } from './TasksParent.styles';
+import { addTask, useAppDispatch, useAppSelector } from '@/shared/store';
 
 const TODAY = '07';
 
@@ -71,6 +72,8 @@ const MOCK_SKILLS = ['Tự lập', 'Giao tiếp', 'Sức khỏe', 'Sáng tạo',
 
 export default function TasksParent() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
+  const sharedTasks = useAppSelector((state) => state.kidlife.tasks);
   const [activeTab, setActiveTab] = useState<'personal' | 'marketplace'>('personal');
   const [activeDate, setActiveDate] = useState(TODAY);
   const [activeFilter, setActiveFilter] = useState('Tất cả');
@@ -92,6 +95,7 @@ export default function TasksParent() {
   const [selectedSkill, setSelectedSkill] = useState('');
   const [selectedReward, setSelectedReward] = useState(1);
   const [taskDescription, setTaskDescription] = useState('');
+  const [taskTitle, setTaskTitle] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [taskType, setTaskType] = useState('ai_video');
   const [checklistItems, setChecklistItems] = useState([{ id: 1, text: '' }]);
@@ -99,7 +103,39 @@ export default function TasksParent() {
   const [isGeneratingChecklist, setIsGeneratingChecklist] = useState(false);
 
   // Lọc task theo ngày được chọn
-  const filteredTasks = MOCK_TASKS.filter(task => task.date === activeDate);
+  const filteredTasks = activeDate === TODAY
+    ? sharedTasks.map((task) => ({
+        id: task.id,
+        date: TODAY,
+        title: task.title,
+        time: task.time,
+        stars: Math.max(1, Math.round(task.rewardXP / 30)),
+        xp: task.rewardXP,
+        category: task.category,
+        emoji: task.icon,
+        status:
+          task.status === 'done' ? 'da_duyet'
+          : task.status === 'submitted' ? 'chua_kiem_tra'
+          : task.status === 'in_progress' ? 'dang_thuc_hien'
+          : 'chua_thuc_hien',
+        progress: task.subtasks.length
+          ? Math.round((task.subtasks.filter((item) => item.done).length / task.subtasks.length) * 100)
+          : 0,
+      }))
+    : MOCK_TASKS.filter(task => task.date === activeDate);
+
+  const publishTask = () => {
+    if (!taskTitle.trim()) return false;
+    dispatch(addTask({
+      title: taskTitle,
+      time: '20:30 - 21:00',
+      rewardXP: selectedReward * 30,
+      category: selectedSkill || 'Kỹ năng',
+      icon: selectedEmoji,
+      subtasks: taskType === 'checklist' ? checklistItems.map((item) => item.text) : [taskDescription || taskTitle],
+    }));
+    return true;
+  };
 
   const renderStatus = (status: string) => {
     switch (status) {
@@ -286,6 +322,8 @@ export default function TasksParent() {
                     style={styles.textInput}
                     placeholder="VD: Tự đánh răng buổi sáng..."
                     placeholderTextColor={COLORS.textLight}
+                    value={taskTitle}
+                    onChangeText={setTaskTitle}
                   />
 
                   <Text style={styles.inputLabel}>Biểu tượng</Text>
@@ -495,7 +533,9 @@ export default function TasksParent() {
                   <Text style={styles.primaryButtonText}>Tạo Prompt AI</Text>
                 </TouchableOpacity>
               ) : (modalStep === 3 && taskType === 'checklist') ? (
-                <TouchableOpacity style={styles.primaryButton} onPress={() => setModalStep(4)}>
+                <TouchableOpacity style={styles.primaryButton} onPress={() => {
+                  if (publishTask()) setModalStep(4);
+                }}>
                   <Feather name="check-square" size={18} color={COLORS.white} style={{ marginRight: 8 }} />
                   <Text style={styles.primaryButtonText}>Tạo nhiệm vụ Checklist</Text>
                 </TouchableOpacity>
@@ -505,7 +545,15 @@ export default function TasksParent() {
                   <Feather name="arrow-right" size={20} color={COLORS.white} />
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity style={styles.primaryButton} onPress={() => { setModalStep(1); setIsAddModalVisible(false); }}>
+                <TouchableOpacity style={styles.primaryButton} onPress={() => {
+                  if (taskType !== 'ai_video' || publishTask()) {
+                    setTaskTitle('');
+                    setTaskDescription('');
+                    setChecklistItems([{ id: 1, text: '' }]);
+                    setModalStep(1);
+                    setIsAddModalVisible(false);
+                  }
+                }}>
                   <Text style={styles.primaryButtonText}>Hoàn tất</Text>
                   <Feather name="check" size={20} color={COLORS.white} />
                 </TouchableOpacity>
@@ -696,7 +744,7 @@ export default function TasksParent() {
                       </View>
                       <View>
                         <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.textDark }}>{template.author}</Text>
-                        {template.badge && <Text style={{ fontSize: 9, color: COLORS.orange, fontWeight: 'bold' }}>⭐ {template.badge}</Text>}
+                        {template.badge && <Text style={{ fontSize: 9, color: COLORS.starText, fontWeight: 'bold' }}>⭐ {template.badge}</Text>}
                       </View>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
@@ -733,7 +781,7 @@ export default function TasksParent() {
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Text style={{ fontSize: 18, marginRight: 8 }}>{selectedTemplate.authorAvatar}</Text>
                       <Text style={{ fontSize: 14, color: COLORS.textLight }}>Bởi <Text style={{ fontWeight: '700', color: COLORS.textDark }}>{selectedTemplate.author}</Text></Text>
-                      {selectedTemplate.badge && <Text style={{ fontSize: 12, color: COLORS.orange, fontWeight: 'bold', marginLeft: 8 }}>⭐ {selectedTemplate.badge}</Text>}
+                      {selectedTemplate.badge && <Text style={{ fontSize: 12, color: COLORS.starText, fontWeight: 'bold', marginLeft: 8 }}>⭐ {selectedTemplate.badge}</Text>}
                     </View>
                   </View>
                   <TouchableOpacity onPress={() => setIsTemplateModalVisible(false)} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#F0F2FA', justifyContent: 'center', alignItems: 'center' }}>
@@ -743,17 +791,17 @@ export default function TasksParent() {
                 
                 <View style={{ backgroundColor: '#FFF5EB', borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-around', marginBottom: 24 }}>
                   <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.orange }}>{selectedTemplate.tasks.length}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.starText }}>{selectedTemplate.tasks.length}</Text>
                     <Text style={{ fontSize: 12, color: COLORS.textLight }}>Nhiệm vụ</Text>
                   </View>
                   <View style={{ width: 1, backgroundColor: '#FFE4C4' }} />
                   <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.orange }}>{selectedTemplate.copies}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.starText }}>{selectedTemplate.copies}</Text>
                     <Text style={{ fontSize: 12, color: COLORS.textLight }}>Phụ huynh dùng</Text>
                   </View>
                   <View style={{ width: 1, backgroundColor: '#FFE4C4' }} />
                   <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.orange }}>{selectedTemplate.rating}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.starText }}>{selectedTemplate.rating}</Text>
                     <Text style={{ fontSize: 12, color: COLORS.textLight }}>Đánh giá</Text>
                   </View>
                 </View>

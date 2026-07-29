@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { Screen, Container, Text, Button } from '@/shared/components';
+import { Screen, Container, Text, Button, ScreenBackButton } from '@/shared/components';
 import { OTPInput } from '@/shared/components/forms';
 import { Routes } from '@/navigation/constants';
 import { layout, spacing } from '@/theme';
@@ -38,6 +38,7 @@ export const OTPScreen = () => {
   return (
     <Screen safeArea keyboardAware scrollable>
       <Container style={styles.container}>
+        <ScreenBackButton />
         <View style={styles.header}>
           <Text variant="displayMedium">Verify OTP</Text>
           <Text

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Modal, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
+import { ScreenBackButton } from '@/shared/components';
 
 const posts = [
   { name: 'Nguyễn Thị Nga', time: '2 giờ trước', avatar: '👩🏻', text: 'Bé nhà mình hôm nay tự giác dọn đồ chơi mà không cần nhắc, vui quá các ba mẹ ơi! 🌱', image: '🧒🏻🧸', likes: 24, comments: 8 },
@@ -54,7 +55,8 @@ export default function CommunityScreen() {
     <ScrollView style={L.screen} showsVerticalScrollIndicator={false}>
       {/* Top Header */}
       <View style={styles.header}>
-        <View>
+        <ScreenBackButton />
+        <View style={styles.headerCopy}>
           <Text style={styles.title}>Cộng đồng KidLife</Text>
           <Text style={styles.subtitle}>Cùng nhau nuôi dạy những em bé hạnh phúc</Text>
         </View>
@@ -280,7 +282,8 @@ export default function CommunityScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 50, marginBottom: 18, paddingHorizontal: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 50, marginBottom: 18, paddingHorizontal: 20 },
+  headerCopy: { flex: 1, marginHorizontal: 12 },
   title: { color: C.text, fontSize: 24, fontWeight: '800' },
   subtitle: { color: C.muted, fontSize: 11, marginTop: 4 },
   search: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' },

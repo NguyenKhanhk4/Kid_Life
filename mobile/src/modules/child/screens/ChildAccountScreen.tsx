@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, Modal, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { CommonActions, useNavigation } from '@react-navigation/native';
+import { Navigators, Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
+import { ScreenBackButton } from '@/shared/components';
 
 export default function ChildAccountScreen() {
+  const navigation = useNavigation<any>();
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   
   // Pet State
@@ -50,9 +54,36 @@ export default function ChildAccountScreen() {
     Alert.alert('Thành công', 'Thông tin thú cưng đã được cập nhật!');
   };
 
+  const handleLogout = () => {
+    Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất khỏi tài khoản trẻ em?', [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: () => {
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: Navigators.Auth,
+                  state: {
+                    index: 0,
+                    routes: [{ name: Routes.Auth.RoleSelection }],
+                  },
+                },
+              ],
+            }),
+          );
+        },
+      },
+    ]);
+  };
+
   return (
     <ScrollView style={L.screen} contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
+        <ScreenBackButton />
         <Text style={styles.title}>Thông tin</Text>
         <View style={styles.settingsBtn}>
           <Ionicons name="settings-outline" size={24} color={C.primary} />
@@ -173,9 +204,14 @@ export default function ChildAccountScreen() {
         </View>
       </View>
 
-      <Pressable style={styles.switchBtn}>
-        <Ionicons name="swap-horizontal" size={20} color={C.primary} />
-        <Text style={styles.switchBtnText}>Chuyển sang tài khoản phụ huynh</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Đăng xuất"
+        style={styles.logoutBtn}
+        onPress={handleLogout}
+      >
+        <Ionicons name="log-out-outline" size={20} color={C.red} />
+        <Text style={styles.logoutBtnText}>Đăng xuất</Text>
       </Pressable>
       
       <View style={{height: 40}} />
@@ -230,7 +266,7 @@ export default function ChildAccountScreen() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 50, marginBottom: 20 },
-  title: { color: C.text, fontSize: 32, fontWeight: '900' },
+  title: { flex: 1, color: C.text, fontSize: 27, fontWeight: '900', marginHorizontal: 12 },
   settingsBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#E7EBFF', justifyContent: 'center', alignItems: 'center' },
   
   petCard: { flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 24, padding: 16, marginBottom: 24, shadowColor: C.shadow, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
@@ -265,10 +301,10 @@ const styles = StyleSheet.create({
   childInfoTextContainer: { flex: 1 },
   childInfoLabel: { fontSize: 11, color: C.muted, marginBottom: 2 },
   childInfoValue: { fontSize: 14, fontWeight: '800', color: '#3A4A7A' },
-  childInfoDivider: { height: 1, backgroundColor: '#F0F2FA', my: 12, marginVertical: 12 },
+  childInfoDivider: { height: 1, backgroundColor: '#F0F2FA', marginVertical: 12 },
   
-  switchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, backgroundColor: '#F0F2FA', borderRadius: 16 },
-  switchBtnText: { color: C.primary, fontSize: 14, fontWeight: '800' },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, backgroundColor: C.redSoft, borderRadius: 16 },
+  logoutBtnText: { color: C.red, fontSize: 14, fontWeight: '800' },
   
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
   modalContainer: { backgroundColor: '#FFF', borderRadius: 24, padding: 24 },

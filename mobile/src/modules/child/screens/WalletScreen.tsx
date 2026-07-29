@@ -3,7 +3,13 @@ import { Pressable, ScrollView, StyleSheet, View, Text, Modal, Alert } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import {
+  acknowledgePenalty,
+  requestReward,
+  transferSavings,
+  useAppDispatch,
+  useAppSelector,
+} from '@/shared/store';
 
 const history = [
   { label: 'Lãi tiết kiệm hôm nay', date: 'Hôm nay, 08:00', amount: '+15', icon: 'trending-up', color: C.green },
@@ -15,30 +21,29 @@ const history = [
 
 export default function WalletScreen() {
   const navigation = useNavigation<any>();
-  const [balance, setBalance] = useState(MOCK_KIDLIFE_DATA.wallet.balance);
-  const [savings, setSavings] = useState(MOCK_KIDLIFE_DATA.wallet.savingsBalance);
+  const dispatch = useAppDispatch();
+  const { child, wallet, penalties, rewards, redemptionRequests } = useAppSelector((state) => state.kidlife);
   const [selected, setSelected] = useState<string | null>(null);
   const [showPenaltyModal, setShowPenaltyModal] = useState(false);
+  const latestPenalty = penalties.find((penalty) => penalty.status === 'issued') ?? penalties[0];
 
-  const redeem = (cost: number, title: string) => {
-    if (balance >= cost) {
-      setBalance((value) => value - cost);
+  const redeem = (id: string, cost: number, title: string) => {
+    if (wallet.balance >= cost) {
+      dispatch(requestReward(id));
       setSelected(title);
-      Alert.alert('🎉 Đổi thành công!', `Đã gửi đề nghị đổi "${title}" với giá ${cost} XP tới ba mẹ!`);
+      Alert.alert('🎉 Đã gửi yêu cầu!', `Đề nghị đổi "${title}" với giá ${cost} XP đang chờ ba mẹ duyệt.`);
     }
   };
 
   const depositSavings = () => {
-    if (balance < 100) return;
-    setBalance((prev) => prev - 100);
-    setSavings((prev) => prev + 100);
+    if (wallet.balance < 100) return;
+    dispatch(transferSavings({ direction: 'deposit', amount: 100 }));
     Alert.alert('💰 Đã gửi 100 XP vào Sổ tiết kiệm!', 'Mỗi ngày Sổ tiết kiệm sẽ sinh lời 5%/tuần cho bé nhé! 📈');
   };
 
   const withdrawSavings = () => {
-    if (savings < 100) return;
-    setSavings((prev) => prev - 100);
-    setBalance((prev) => prev + 100);
+    if (wallet.savingsBalance < 100) return;
+    dispatch(transferSavings({ direction: 'withdraw', amount: 100 }));
     Alert.alert('📤 Đã rút 100 XP về ví!', 'Nhớ giữ tiền trong Sổ tiết kiệm để nhận thêm nhiều tiền lãi nha!');
   };
 
@@ -50,7 +55,7 @@ export default function WalletScreen() {
           <Ionicons name="chevron-back" size={20} color={C.primary} />
         </Pressable>
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={styles.overline}>KHO BÁU CỦA BÉ {MOCK_KIDLIFE_DATA.child.name.toUpperCase()}</Text>
+          <Text style={styles.overline}>KHO BÁU CỦA BÉ {child.name.toUpperCase()}</Text>
           <Text style={styles.title}>Ví điểm & Tiết kiệm</Text>
         </View>
         <View style={styles.coin}>
@@ -64,7 +69,7 @@ export default function WalletScreen() {
         <View style={styles.balanceTop}>
           <View>
             <Text style={styles.balanceLabel}>Số dư tiêu dùng</Text>
-            <Text style={styles.balance}>{balance.toLocaleString('vi-VN')} <Text style={styles.balanceUnit}>XP</Text></Text>
+            <Text style={styles.balance}>{wallet.balance.toLocaleString('vi-VN')} <Text style={styles.balanceUnit}>XP</Text></Text>
           </View>
           <View style={styles.walletIcon}>
             <Ionicons name="wallet" size={31} color="#FFF" />
@@ -86,14 +91,14 @@ export default function WalletScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.savingsTitle}>Sổ Tiết Kiệm</Text>
-            <Text style={styles.savingsSub}>Sinh lời {MOCK_KIDLIFE_DATA.wallet.interestRate}%/tuần • Lãi kép</Text>
+            <Text style={styles.savingsSub}>Sinh lời {wallet.interestRate}%/tuần • Lãi kép</Text>
           </View>
-          <Text style={styles.savingsVal}>{savings.toLocaleString('vi-VN')} XP</Text>
+          <Text style={styles.savingsVal}>{wallet.savingsBalance.toLocaleString('vi-VN')} XP</Text>
         </View>
 
         <View style={styles.interestTicker}>
           <Ionicons name="trending-up" size={16} color={C.green} />
-          <Text style={styles.interestText}>Lãi hôm nay: <Text style={{ color: C.green, fontWeight: '800' }}>+{MOCK_KIDLIFE_DATA.wallet.dailyInterest} XP</Text></Text>
+          <Text style={styles.interestText}>Lãi hôm nay: <Text style={{ color: C.green, fontWeight: '800' }}>+{wallet.dailyInterest} XP</Text></Text>
         </View>
 
         <View style={styles.savingsActions}>
@@ -109,14 +114,14 @@ export default function WalletScreen() {
       </View>
 
       {/* Penalty alert banner */}
-      <Pressable style={styles.penaltyAlert} onPress={() => setShowPenaltyModal(true)}>
+      {latestPenalty && <Pressable style={styles.penaltyAlert} onPress={() => setShowPenaltyModal(true)}>
         <Text style={{ fontSize: 22 }}>⚠️</Text>
         <View style={{ flex: 1 }}>
           <Text style={styles.penaltyAlertTitle}>Vé phạt vừa nhận</Text>
-          <Text style={styles.penaltyAlertSub}>Bị trừ 30 Sao vì tội "{MOCK_KIDLIFE_DATA.penalties[0].reason}"</Text>
+          <Text style={styles.penaltyAlertSub}>{latestPenalty.amount} XP vì "{latestPenalty.reason}"</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={C.red} />
-      </Pressable>
+      </Pressable>}
 
       {/* Redeem Rewards Section */}
       <View style={styles.sectionHeader}>
@@ -125,18 +130,18 @@ export default function WalletScreen() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rewardRow}>
-        {MOCK_KIDLIFE_DATA.rewards.map((reward) => (
+        {rewards.filter((reward) => reward.active).map((reward) => (
           <View key={reward.id} style={styles.rewardCard}>
             <Text style={styles.rewardIcon}>{reward.icon}</Text>
             <Text style={styles.rewardTitle}>{reward.title}</Text>
             <View style={styles.rewardBottom}>
               <Text style={styles.cost}>{reward.cost} XP</Text>
               <Pressable
-                style={[styles.redeem, balance < reward.cost && styles.redeemDisabled]}
-                onPress={() => redeem(reward.cost, reward.title)}
-                disabled={balance < reward.cost}
+                style={[styles.redeem, wallet.balance < reward.cost && styles.redeemDisabled]}
+                onPress={() => redeem(reward.id, reward.cost, reward.title)}
+                disabled={wallet.balance < reward.cost}
               >
-                <Text style={styles.redeemText}>{selected === reward.title ? 'Đã gửi' : 'Đổi'}</Text>
+                <Text style={styles.redeemText}>{selected === reward.title || redemptionRequests.some((request) => request.rewardId === reward.id && request.status === 'pending') ? 'Đã gửi' : 'Đổi'}</Text>
               </Pressable>
             </View>
           </View>
@@ -174,10 +179,13 @@ export default function WalletScreen() {
               <Text style={styles.ticketBadgeText}>VÉ PHẠT TỪ BA MẸ</Text>
             </View>
             <Text style={styles.ticketEmoji}>🎮</Text>
-            <Text style={styles.ticketTitle}>{MOCK_KIDLIFE_DATA.penalties[0].reason}!</Text>
-            <Text style={styles.ticketDesc}>Bé bị trừ 30 Sao vì chưa dừng chơi game khi hết giờ hẹn.</Text>
+            <Text style={styles.ticketTitle}>{latestPenalty?.reason}!</Text>
+            <Text style={styles.ticketDesc}>Bé bị trừ {Math.abs(latestPenalty?.amount ?? 0)} XP. Ba mẹ mong bé ghi nhớ và cố gắng hơn lần sau.</Text>
             <Text style={styles.ticketEncourage}>💪 Lần sau cố gắng giữ đúng giờ nhé bé!</Text>
-            <Pressable style={styles.ticketCloseBtn} onPress={() => setShowPenaltyModal(false)}>
+            <Pressable style={styles.ticketCloseBtn} onPress={() => {
+              if (latestPenalty) dispatch(acknowledgePenalty(latestPenalty.id));
+              setShowPenaltyModal(false);
+            }}>
               <Text style={styles.ticketCloseText}>Con hứa lần sau cố gắng!</Text>
             </Pressable>
           </View>

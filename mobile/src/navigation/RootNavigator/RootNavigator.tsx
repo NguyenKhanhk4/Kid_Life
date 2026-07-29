@@ -13,20 +13,7 @@ import { RootStackParamList } from '../types';
 import { AppStack, AuthStack } from '../StackNavigator';
 import { ModalNavigator } from '../ModalNavigator';
 import { navigationRef } from '../NavigationService';
-
-// Linking Configuration (Placeholder)
-const linking = {
-  prefixes: ['kidlife://', 'https://kidlife.app'],
-  config: {
-    screens: {
-      [Navigators.Main]: {
-        screens: {
-          // Future Tabs mappings
-        },
-      },
-    },
-  },
-};
+import { appLinkingConfig } from '../linking';
 
 import { SplashScreen } from '@/modules/startup/screens/SplashScreen';
 
@@ -55,7 +42,7 @@ export const RootNavigator = () => {
     <NavigationContainer
       ref={navigationRef}
       theme={navigationTheme}
-      linking={linking}
+      linking={appLinkingConfig}
     >
       <RootStack.Navigator
         initialRouteName={Routes.Root.Splash}

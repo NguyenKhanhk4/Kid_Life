@@ -3,27 +3,23 @@ import { Pressable, ScrollView, StyleSheet, View, Text, Modal, TextInput, Alert,
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import { inviteFamilyMember, useAppDispatch, useAppSelector } from '@/shared/store';
 
 export default function CoParentingScreen() {
   const navigation = useNavigation<any>();
-  const [members, setMembers] = useState(MOCK_KIDLIFE_DATA.familyMembers);
+  const dispatch = useAppDispatch();
+  const { child, familyMembers: members } = useAppSelector((state) => state.kidlife);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [invitePhone, setInvitePhone] = useState('');
   const [selectedRole, setSelectedRole] = useState('parent');
 
   const handleInvite = () => {
     if (!invitePhone.trim()) return;
-    const newM = {
-      id: `${Date.now()}`,
+    dispatch(inviteFamilyMember({
       name: `Thành viên (${invitePhone})`,
-      role: selectedRole,
-      roleLabel: selectedRole === 'parent' ? 'Phụ huynh' : 'Ông/Bà',
-      avatar: selectedRole === 'parent' ? '👨🏻' : '👴',
       phone: invitePhone,
-      status: 'pending',
-    };
-    setMembers([...members, newM]);
+      role: selectedRole as 'parent' | 'grandparent',
+    }));
     setShowInviteModal(false);
     setInvitePhone('');
     Alert.alert('✅ Gửi lời mời thành công!', `Đã gửi liên kết tham gia gia đình tới số điện thoại ${invitePhone}.`);
@@ -47,7 +43,7 @@ export default function CoParentingScreen() {
 
       {/* Overview Banner */}
       <View style={styles.bannerCard}>
-        <Text style={styles.bannerTitle}>Cùng nuôi dạy bé {MOCK_KIDLIFE_DATA.child.name}</Text>
+        <Text style={styles.bannerTitle}>Cùng nuôi dạy bé {child.name}</Text>
         <Text style={styles.bannerSub}>Mời thêm Bố, Mẹ, Ông Nội, Bà Nội cùng tham gia giao task & xem thành tựu của bé.</Text>
 
         <TouchableOpacity style={styles.inviteCtaBtn} onPress={() => setShowInviteModal(true)}>

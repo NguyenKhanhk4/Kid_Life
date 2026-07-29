@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
 import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import { addStoryToChildLibrary, useAppDispatch, useAppSelector } from '@/shared/store';
 
 const internetStories = [
   { id: 'ext1', title: 'Sự tích cây vú sữa', source: 'Kho tàng Cổ tích VN', age: '4-8', duration: '6 phút', lesson: 'Tình mẫu tử thiêng liêng', added: true },
@@ -15,6 +16,8 @@ const internetStories = [
 
 export default function ParentBedtimeStoriesScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
+  const childStoryIds = useAppSelector((state) => state.kidlife.childStoryIds);
   const [voiceClonedMom, setVoiceClonedMom] = useState(true);
   const [voiceClonedDad, setVoiceClonedDad] = useState(false);
   const [showStudioModal, setShowStudioModal] = useState(false);
@@ -43,8 +46,9 @@ export default function ParentBedtimeStoriesScreen() {
   };
 
   const toggleAddStory = (id: string) => {
+    dispatch(addStoryToChildLibrary(id));
     setStoryList((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, added: !s.added } : s))
+      prev.map((s) => (s.id === id ? { ...s, added: true } : s))
     );
   };
 
@@ -165,12 +169,12 @@ export default function ParentBedtimeStoriesScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.addLibraryBtn, story.added && styles.addLibraryBtnAdded]}
+              style={[styles.addLibraryBtn, (story.added || childStoryIds.includes(story.id)) && styles.addLibraryBtnAdded]}
               onPress={() => toggleAddStory(story.id)}
             >
-              <Ionicons name={story.added ? 'checkmark' : 'add'} size={16} color={story.added ? C.green : '#FFF'} />
-              <Text style={[styles.addLibraryText, story.added && { color: C.green }]}>
-                {story.added ? 'Đã thêm' : 'Thêm'}
+              <Ionicons name={story.added || childStoryIds.includes(story.id) ? 'checkmark' : 'add'} size={16} color={story.added || childStoryIds.includes(story.id) ? C.green : '#FFF'} />
+              <Text style={[styles.addLibraryText, (story.added || childStoryIds.includes(story.id)) && { color: C.green }]}>
+                {story.added || childStoryIds.includes(story.id) ? 'Đã thêm' : 'Thêm'}
               </Text>
             </TouchableOpacity>
           </View>

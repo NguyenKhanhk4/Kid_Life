@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
 import WardrobeScreen from './WardrobeScreen';
+import { feedPet, useAppDispatch, useAppSelector } from '@/shared/store';
 
 type EvoStage = { level: number; name: string; emoji: string; xpRequired: number };
 
@@ -24,11 +25,13 @@ const streakDays = [
 
 export default function PetScreen() {
   const navigation = useNavigation<any>();
-  const [currentXP, setCurrentXP] = useState(1200);
+  const dispatch = useAppDispatch();
+  const { pet: petState, wallet } = useAppSelector((state) => state.kidlife);
+  const [currentXP] = useState(petState.xp);
   const [stageIndex, setStageIndex] = useState(1); // Rồng con
-  const [streak] = useState(11);
-  const [fed, setFed] = useState(false);
-  const [mood, setMood] = useState<'happy' | 'normal' | 'sick'>('normal');
+  const streak = petState.streak;
+  const fed = petState.fed;
+  const mood = petState.mood;
   const [wardrobe, setWardrobe] = useState(false);
 
   if (wardrobe) return <WardrobeScreen onBack={() => setWardrobe(false)} />;
@@ -38,11 +41,9 @@ export default function PetScreen() {
   const progress = nextStage ? ((currentXP - stage.xpRequired) / (nextStage.xpRequired - stage.xpRequired)) * 100 : 100;
 
   const handleFeed = () => {
-    if (fed) return;
-    setFed(true);
-    setMood('happy');
-    setCurrentXP((prev) => prev + 30);
-    Alert.alert('🍖 Cho ăn thành công!', 'Rồng con no bụng và rất vui! +30 XP\n\nGiữ streak 14 ngày làm việc nhà để rồng tiến hóa!');
+    if (fed || wallet.balance < 10) return;
+    dispatch(feedPet());
+    Alert.alert('🍖 Cho ăn thành công!', 'Rồng con no bụng và rất vui! Đã dùng 10 XP.\n\nGiữ streak 14 ngày làm việc nhà để rồng tiến hóa!');
   };
 
   const handleEvolveDemo = () => {
@@ -75,7 +76,7 @@ export default function PetScreen() {
           <View style={styles.shadow} />
           <View style={styles.speech}>
             <Text style={styles.speechText}>
-              {fed ? 'No quá rồiiii! 😄' : mood === 'sick' ? 'Tớ bị ốm rồi... 😷' : 'Tớ đói bụng rồii 😋'}
+              {fed ? 'No quá rồiiii! 😄' : mood === 'Bị ốm' ? 'Tớ bị ốm rồi... 😷' : 'Tớ đói bụng rồii 😋'}
             </Text>
           </View>
         </View>
@@ -84,8 +85,8 @@ export default function PetScreen() {
           <View style={styles.infoLine}>
             <Text style={styles.infoLabel}>Tâm trạng</Text>
             <View style={styles.mood}>
-              <Text style={styles.moodEmoji}>{fed ? '😄' : mood === 'sick' ? '😷' : '😋'}</Text>
-              <Text style={styles.moodText}>{fed ? 'Vui vẻ' : mood === 'sick' ? 'Bị ốm' : 'Đói bụng'}</Text>
+              <Text style={styles.moodEmoji}>{fed ? '😄' : mood === 'Bị ốm' ? '😷' : '😋'}</Text>
+              <Text style={styles.moodText}>{fed ? 'Vui vẻ' : mood}</Text>
             </View>
           </View>
 
@@ -100,7 +101,7 @@ export default function PetScreen() {
           <Pressable style={[styles.feedButton, fed && styles.feedButtonDone]} onPress={handleFeed}>
             <Ionicons name={fed ? 'checkmark-circle' : 'restaurant'} size={20} color={fed ? C.green : '#FFF'} />
             <Text style={[styles.feedText, fed && { color: C.green }]}>
-              {fed ? 'Đã cho ăn hôm nay' : 'Cho rồng ăn (30 XP)'}
+              {fed ? 'Đã cho ăn hôm nay' : 'Cho rồng ăn (10 XP)'}
             </Text>
           </Pressable>
         </View>

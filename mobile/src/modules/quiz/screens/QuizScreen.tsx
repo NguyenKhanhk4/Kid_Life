@@ -58,7 +58,7 @@ export default function QuizScreen() {
     if (isLast) {
       const finalAnswers = [...answers];
       if (selected !== null) finalAnswers[currentQ] = selected;
-      const score = finalAnswers.reduce((acc, ans, i) => acc + (ans === quiz.questions[i].correctIndex ? 1 : 0), 0);
+      const score = finalAnswers.reduce<number>((acc, ans, i) => acc + (ans === quiz.questions[i].correctIndex ? 1 : 0), 0);
       const passed = score >= quiz.passScore;
       navigation.replace(Routes.Quiz.Result, {
         score, total: quiz.questions.length, passed, pointsAwarded: passed ? quiz.rewardPoints : 0, quizId,

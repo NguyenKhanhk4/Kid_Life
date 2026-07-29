@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C } from '@/theme';
+import { claimQuizReward, useAppDispatch } from '@/shared/store';
 
 const MOCK_ANSWERS: Record<string, any[]> = {
   '1': [
@@ -17,10 +18,16 @@ const MOCK_ANSWERS: Record<string, any[]> = {
 
 export default function QuizResultScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
   const route = useRoute<any>();
   const { score = 4, total = 5, passed = true, pointsAwarded = 50, quizId = '1' } = route.params ?? {};
 
   const questions = MOCK_ANSWERS[quizId] ?? MOCK_ANSWERS['1'];
+  useEffect(() => {
+    if (passed && pointsAwarded > 0) {
+      dispatch(claimQuizReward({ quizId, amount: pointsAwarded }));
+    }
+  }, [dispatch, passed, pointsAwarded, quizId]);
   // Mock user answers (simulate some wrong ones)
   const mockUserAnswers = questions.map((q: any, i: number) => i < score ? q.correctIndex : (q.correctIndex + 1) % 4);
 

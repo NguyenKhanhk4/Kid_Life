@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
 import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import { useAppSelector } from '@/shared/store';
 
 const categories = [
   { id: 'all', name: 'Tất cả', emoji: '📚' },
@@ -33,8 +34,17 @@ const stories = [
   { id: '6', title: 'Hệ mặt trời kỳ diệu', category: 'khoahoc', age: '6-10', emoji: '🌍', duration: '7 phút', desc: 'Du hành vũ trụ cùng bé học về các hành tinh', lesson: 'Thiên văn học' },
 ];
 
+const curatedStories = [
+  { id: 'ext1', title: 'Sự tích cây vú sữa', category: 'daoduc', age: '4-8', emoji: '🌳', duration: '6 phút', desc: 'Câu chuyện cảm động về tình mẫu tử', lesson: 'Tình mẫu tử' },
+  { id: 'ext2', title: 'Thạch Sanh đánh Chằn Tinh', category: 'cotich', age: '6-10', emoji: '⚔️', duration: '9 phút', desc: 'Hành trình dũng cảm bảo vệ mọi người', lesson: 'Dũng cảm, chính nghĩa' },
+  { id: 'ext3', title: 'Rùa và Thỏ thi chạy', category: 'daoduc', age: '3-6', emoji: '🐢', duration: '5 phút', desc: 'Chậm mà chắc sẽ đến đích', lesson: 'Kiên trì' },
+  { id: 'ext4', title: 'Cậu bé chăn cừu', category: 'daoduc', age: '5-8', emoji: '🐑', duration: '7 phút', desc: 'Bài học về lời nói thật', lesson: 'Trung thực' },
+  { id: 'ext5', title: 'Cây tre trăm đốt', category: 'cotich', age: '6-10', emoji: '🎋', duration: '10 phút', desc: 'Truyện cổ tích Việt Nam giàu ý nghĩa', lesson: 'Ở hiền gặp lành' },
+];
+
 export default function ChildBedtimeStoriesScreen() {
   const navigation = useNavigation<any>();
+  const childStoryIds = useAppSelector((state) => state.kidlife.childStoryIds);
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedVoice, setSelectedVoice] = useState('wizard');
   const [selectedStory, setSelectedStory] = useState<typeof stories[0] | null>(null);
@@ -43,7 +53,8 @@ export default function ChildBedtimeStoriesScreen() {
   const [bgmOn, setBgmOn] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredStories = stories.filter((s) => {
+  const availableStories = [...stories, ...curatedStories.filter((story) => childStoryIds.includes(story.id))];
+  const filteredStories = availableStories.filter((s) => {
     const matchCat = activeCategory === 'all' || s.category === activeCategory;
     const matchSearch = !searchQuery || s.title.toLowerCase().includes(searchQuery.toLowerCase()) || s.lesson.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCat && matchSearch;

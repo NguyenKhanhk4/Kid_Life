@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, Alert, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-import { useNavigation } from '@react-navigation/native';
-import { Routes } from '@/navigation/constants';
+import { ScreenBackButton } from '@/shared/components';
 
 const INITIAL_BADGES = [
   { icon: '⭐', title: 'Siêu sao', text: 'Hoàn thành 10 nhiệm vụ', status: 'claimed', progress: '10/10', reward: 50 },
@@ -21,7 +20,6 @@ const templates = [
 ];
 
 export default function AchievementsScreen() {
-  const navigation = useNavigation<any>();
   const [tab, setTab] = useState('Tất cả');
   const [xpToExchange, setXpToExchange] = useState(1250);
   const [badgesState, setBadgesState] = useState(INITIAL_BADGES);
@@ -62,7 +60,8 @@ export default function AchievementsScreen() {
     <ScrollView style={L.screen} contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <ScreenBackButton />
+        <View style={styles.headerCopy}>
           <Text style={styles.overline}>BỘ SƯU TẬP THÀNH TỰU</Text>
           <Text style={styles.title}>Huy hiệu của bé</Text>
         </View>
@@ -221,9 +220,10 @@ export default function AchievementsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 50, marginBottom: 17 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 50, marginBottom: 17 },
+  headerCopy: { flex: 1, marginHorizontal: 12 },
   overline: { color: C.primary, fontSize: 10, fontWeight: '800', letterSpacing: 1.1 },
-  title: { color: C.text, fontSize: 28, fontWeight: '800', marginTop: 4 },
+  title: { color: C.text, fontSize: 23, fontWeight: '800', marginTop: 4 },
   xp: { flexDirection: 'row', gap: 5, alignItems: 'center', backgroundColor: C.orangeSoft, borderRadius: 999, padding: 9 },
   xpText: { color: '#B36A00', fontSize: 12, fontWeight: '800' },
 

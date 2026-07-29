@@ -4,21 +4,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-
-const MOCK_SUBMISSIONS = [
-  { id: '1', missionTitle: 'Đánh răng trước khi ngủ', childName: 'Minh Anh', childAvatar: '🧒', submittedAt: 'Hôm nay, 20:45', aiConfidence: 92, aiLabel: 'Đánh răng', status: 'pending', emoji: '🪥' },
-  { id: '2', missionTitle: 'Dọn dẹp đồ chơi', childName: 'Thảo My', childAvatar: '👧', submittedAt: 'Hôm nay, 18:30', aiConfidence: 67, aiLabel: 'Dọn dẹp', status: 'pending', emoji: '🧸' },
-  { id: '3', missionTitle: 'Tự gấp quần áo', childName: 'Minh Anh', childAvatar: '🧒', submittedAt: 'Hôm qua, 19:10', aiConfidence: 88, aiLabel: 'Gấp quần áo', status: 'approved', emoji: '👕' },
-  { id: '4', missionTitle: 'Rửa tay trước khi ăn', childName: 'Nhật Linh', childAvatar: '👦', submittedAt: 'Hôm qua, 12:00', aiConfidence: 45, aiLabel: 'Không rõ', status: 'rejected', emoji: '🧼' },
-];
+import { useAppSelector } from '@/shared/store';
 
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected';
 
 export default function ApprovalQueueScreen() {
   const navigation = useNavigation<any>();
+  const submissions = useAppSelector((state) => state.kidlife.submissions);
   const [filter, setFilter] = useState<FilterType>('pending');
 
-  const filtered = filter === 'all' ? MOCK_SUBMISSIONS : MOCK_SUBMISSIONS.filter(s => s.status === filter);
+  const filtered = filter === 'all' ? submissions : submissions.filter(s => s.status === filter);
 
   const getConfidenceColor = (c: number) => c >= 80 ? C.green : c >= 50 ? C.orange : C.red;
 

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
+import { ScreenBackButton } from '@/shared/components';
 
 import { useNavigation } from '@react-navigation/native';
+import { equipPetItem, requestReward, useAppDispatch, useAppSelector } from '@/shared/store';
 
 const groups = {
   'Đồ ăn': [['🍎', 'Táo đỏ', 3], ['🍪', 'Bánh quy', 5], ['🍰', 'Bánh kem', 10], ['🍕', 'Pizza', 8], ['🍔', 'Burger', 9], ['🍣', 'Sushi', 12], ['🍜', 'Mì ramen', 6], ['🌽', 'Bắp ngô', 4]],
@@ -11,25 +13,18 @@ const groups = {
   'Nội thất': [['🛏️', 'Giường nhỏ', 12], ['🛁', 'Bồn tắm', 10], ['🪑', 'Ghế gỗ', 5], ['📺', 'Tivi', 15], ['🪴', 'Cây xanh', 7], ['🪆', 'Đồ trang trí', 9]]
 } as const;
 
-const MOCK_REWARDS = [
-  { id: '1', title: 'Đồ chơi Lego', cost: 150, icon: '🧩', stock: 1, type: 'item' },
-  { id: '2', title: 'Đi chơi công viên', cost: 300, icon: '🎢', stock: 99, type: 'experience' },
-  { id: '3', title: 'Xem phim cuối tuần', cost: 200, icon: '🍿', stock: 99, type: 'experience' },
-  { id: '4', title: 'Ăn gà rán KFC', cost: 250, icon: '🍗', stock: 99, type: 'food' },
-  { id: '5', title: 'Mua sách truyện', cost: 100, icon: '📚', stock: 5, type: 'item' },
-];
-
 type Category = keyof typeof groups;
 
 export default function StoreScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
+  const { wallet, rewards, redemptionRequests } = useAppSelector((state) => state.kidlife);
   const [storeType, setStoreType] = useState<'pet' | 'parent'>('pet');
   const [category, setCategory] = useState<Category>('Đồ ăn');
-  const [coins, setCoins] = useState(1250); // XP Balance
   const [owned, setOwned] = useState<string[]>([]);
   
   const handleRedeemReward = (item: any) => {
-    if (coins < item.cost) {
+    if (wallet.balance < item.cost) {
       Alert.alert('Không đủ điểm', 'Bé cần làm thêm nhiệm vụ để đổi phần thưởng này nhé!');
       return;
     }
@@ -41,6 +36,7 @@ export default function StoreScreen() {
         { 
           text: 'Gửi yêu cầu', 
           onPress: () => {
+            dispatch(requestReward(item.id));
             Alert.alert('Thành công!', 'Yêu cầu đổi quà đã được gửi cho ba mẹ. Hãy chờ ba mẹ duyệt nhé!');
           }
         }
@@ -51,13 +47,14 @@ export default function StoreScreen() {
   return (
     <ScrollView style={L.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <View>
+        <ScreenBackButton />
+        <View style={styles.headerCopy}>
           <Text style={styles.title}>Cửa hàng</Text>
           <Text style={styles.subtitle}>Mang những điều vui về cho Bun Bun</Text>
         </View>
         <Pressable style={styles.coins} onPress={() => navigation.navigate('WalletScreen' as any)}>
           <Ionicons name="star" size={16} color={C.orange} />
-          <Text style={styles.coinsText}>{coins} XP</Text>
+          <Text style={styles.coinsText}>{wallet.balance} XP</Text>
         </Pressable>
       </View>
 
@@ -93,8 +90,8 @@ export default function StoreScreen() {
                 key={name as string} 
                 style={[styles.item, owned.includes(name as string) && styles.itemOwned]} 
                 onPress={() => { 
-                  if (!owned.includes(name as string) && coins >= (cost as number)) { 
-                    setCoins(coins - (cost as number)); 
+                  if (!owned.includes(name as string) && wallet.balance >= (cost as number)) {
+                    dispatch(equipPetItem({ name: name as string, cost: cost as number, owned: false }));
                     setOwned([...owned, name as string]); 
                   } 
                 }}
@@ -125,10 +122,10 @@ export default function StoreScreen() {
           </View>
           
           <View style={styles.rewardGrid}>
-            {MOCK_REWARDS.map((reward) => (
+            {rewards.filter((reward) => reward.active).map((reward) => (
               <Pressable 
                 key={reward.id} 
-                style={[styles.rewardCard, coins < reward.cost && styles.rewardCardLocked]} 
+                style={[styles.rewardCard, wallet.balance < reward.cost && styles.rewardCardLocked]} 
                 onPress={() => handleRedeemReward(reward)}
               >
                 <View style={styles.rewardThumb}>
@@ -138,11 +135,13 @@ export default function StoreScreen() {
                   <Text style={styles.rewardTitle} numberOfLines={2}>{reward.title}</Text>
                   <View style={styles.rewardCostRow}>
                     <Ionicons name="star" size={12} color={C.orange} />
-                    <Text style={[styles.rewardCostText, coins < reward.cost && { color: C.red }]}>{reward.cost} XP</Text>
+                    <Text style={[styles.rewardCostText, wallet.balance < reward.cost && { color: C.red }]}>{reward.cost} XP</Text>
                   </View>
-                  <View style={[styles.redeemBtn, coins < reward.cost ? styles.redeemBtnDisabled : styles.redeemBtnActive]}>
-                    <Text style={[styles.redeemBtnText, coins < reward.cost && { color: C.muted }]}>
-                      {coins >= reward.cost ? 'Đổi ngay' : 'Chưa đủ điểm'}
+                  <View style={[styles.redeemBtn, wallet.balance < reward.cost ? styles.redeemBtnDisabled : styles.redeemBtnActive]}>
+                    <Text style={[styles.redeemBtnText, wallet.balance < reward.cost && { color: C.muted }]}>
+                      {redemptionRequests.some((request) => request.rewardId === reward.id && request.status === 'pending')
+                        ? 'Đang chờ duyệt'
+                        : wallet.balance >= reward.cost ? 'Đổi ngay' : 'Chưa đủ điểm'}
                     </Text>
                   </View>
                 </View>
@@ -159,8 +158,9 @@ export default function StoreScreen() {
 
 const styles = StyleSheet.create({ 
   content: { ...L.content, paddingTop: 50 }, 
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 19 }, 
-  title: { color: C.text, fontSize: 28, fontWeight: '800' }, 
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 19 }, 
+  headerCopy: { flex: 1, marginHorizontal: 12 },
+  title: { color: C.text, fontSize: 24, fontWeight: '800' }, 
   subtitle: { color: C.muted, fontSize: 12, marginTop: 4 }, 
   coins: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.orangeSoft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 9 }, 
   coinsText: { color: '#B36A00', fontSize: 14, fontWeight: '900' }, 

@@ -31,6 +31,7 @@ export const Routes = {
   Parent: {
     ApprovalQueue: 'ApprovalQueueScreen',
     ApprovalDetail: 'ApprovalDetailScreen',
+    Rewards: 'RewardsParentScreen',
   },
   Lesson: {
     Library: 'LessonLibraryScreen',
@@ -63,6 +64,8 @@ export const Routes = {
     CoParenting: 'CoParentingScreen',
     MultiStepTask: 'MultiStepTaskScreen',
     PetEvolution: 'PetEvolutionScreen',
+    Pet: 'PetScreen',
+    Wallet: 'WalletScreen',
   },
   Modal: {
     Dialog: 'DialogScreen',

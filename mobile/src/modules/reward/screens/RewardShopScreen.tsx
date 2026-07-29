@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 8 },
   textInput: { backgroundColor: '#F4F6FB', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 14, color: C.text, marginBottom: 20 },
   emojiSelect: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#F4F6FB', justifyContent: 'center', alignItems: 'center' },
-  emojiSelectActive: { backgroundColor: C.lightBlue, borderWidth: 2, borderColor: C.primary },
+  emojiSelectActive: { backgroundColor: C.primarySoft, borderWidth: 2, borderColor: C.primary },
   primaryButton: { backgroundColor: C.primary, paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 10 },
   primaryButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' }
 });

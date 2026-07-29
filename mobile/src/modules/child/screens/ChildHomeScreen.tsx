@@ -4,14 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-const tasks = [
-  { icon: '🧸', title: 'Dọn dẹp đồ chơi', meta: '18:30 - 19:00', xp: '+30 XP', done: true },
-  { icon: '👕', title: 'Tự gấp quần áo', meta: '19:00 - 19:15', xp: '+50 XP', done: true },
-  { icon: '🪥', title: 'Đánh răng trước khi ngủ', meta: '20:30 - 20:45', xp: '+30 XP', done: false },
-];
+import { equipPetItem, sendWish, useAppDispatch, useAppSelector } from '@/shared/store';
 
 export default function ChildHomeScreen() {
   const navigation = useNavigation();
+  const dispatch = useAppDispatch();
+  const { child, wallet, tasks } = useAppSelector((state) => state.kidlife);
   
   const [isWardrobeVisible, setIsWardrobeVisible] = useState(false);
   const [wardrobeTab, setWardrobeTab] = useState('Đồ ăn');
@@ -34,7 +32,7 @@ export default function ChildHomeScreen() {
         <View style={styles.topBar}>
           <TouchableOpacity style={styles.starPill} onPress={() => navigation.navigate('WalletScreen' as any)}>
             <Ionicons name="star" size={16} color={C.orange} />
-            <Text style={styles.starText}>1,250 XP</Text>
+            <Text style={styles.starText}>{wallet.balance.toLocaleString('vi-VN')} XP</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.bagBtn} onPress={() => setIsWardrobeVisible(true)}>
             <Text style={{ fontSize: 22 }}>🎒</Text>
@@ -43,7 +41,7 @@ export default function ChildHomeScreen() {
 
         <View style={styles.mascotContainer}>
           <View style={styles.speechBubble}>
-            <Text style={styles.speechText}>Chào Minh Anh! Cùng làm nhiệm vụ kiếm sao nhé!</Text>
+            <Text style={styles.speechText}>Chào {child.name}! Cùng làm nhiệm vụ kiếm sao nhé!</Text>
             <View style={styles.speechArrow} />
           </View>
           <Text style={styles.mascotEmoji}>🐹</Text>
@@ -58,12 +56,12 @@ export default function ChildHomeScreen() {
         <QuickAction icon="sparkles-outline" label="Điều ước" color="#FF4785" onPress={() => setIsWishVisible(true)} />
       </ScrollView>
 
-      <View style={styles.sectionHeader}><Text style={L.sectionTitle}>Nhiệm vụ hôm nay</Text><View style={[L.pill, styles.countPill]}><Text style={styles.countText}>2/5 hoàn thành</Text></View></View>
+      <View style={styles.sectionHeader}><Text style={L.sectionTitle}>Nhiệm vụ hôm nay</Text><View style={[L.pill, styles.countPill]}><Text style={styles.countText}>{tasks.filter((task) => task.status === 'done').length}/{tasks.length} hoàn thành</Text></View></View>
       {tasks.map((task) => (
-        <Pressable key={task.title} style={[L.card, styles.taskCard, task.done && styles.taskDone]} accessibilityRole="button" onPress={() => navigation.navigate(Routes.Mission.Detail as any, { missionId: '1', mode: 'child' })}>
+        <Pressable key={task.id} style={[L.card, styles.taskCard, task.status === 'done' && styles.taskDone]} accessibilityRole="button" onPress={() => navigation.navigate(Routes.Mission.Detail as any, { missionId: task.id, mode: 'child' })}>
           <View style={styles.taskIcon}><Text style={styles.taskEmoji}>{task.icon}</Text></View>
-          <View style={styles.taskCopy}><Text style={styles.taskTitle}>{task.title}</Text><View style={styles.taskMeta}><Ionicons name="time-outline" size={14} color={C.muted} /><Text style={L.body}>  {task.meta}</Text><View style={styles.xpBadge}><Text style={styles.xpBadgeText}>{task.xp}</Text></View></View></View>
-          <Ionicons name={task.done ? 'checkmark-circle' : 'chevron-forward'} size={24} color={task.done ? C.green : C.primary} />
+          <View style={styles.taskCopy}><Text style={styles.taskTitle}>{task.title}</Text><View style={styles.taskMeta}><Ionicons name="time-outline" size={14} color={C.muted} /><Text style={L.body}>  {task.time}</Text><View style={styles.xpBadge}><Text style={styles.xpBadgeText}>{task.xp}</Text></View></View></View>
+          <Ionicons name={task.status === 'done' ? 'checkmark-circle' : 'chevron-forward'} size={24} color={task.status === 'done' ? C.green : C.primary} />
         </Pressable>
       ))}
 
@@ -112,8 +110,13 @@ export default function ChildHomeScreen() {
 
             <TouchableOpacity 
               style={[styles.wishSubmitBtn, (!wishText && !isRecording) && {opacity: 0.5}]}
+              disabled={(!wishText && !isRecording) || wallet.balance < 50}
               onPress={() => {
-                if(wishText || isRecording) {
+                if ((wishText || isRecording) && wallet.balance >= 50) {
+                  dispatch(sendWish({
+                    text: wishText || 'Con gửi một điều ước bằng giọng nói',
+                    hasRecording: isRecording,
+                  }));
                   Alert.alert('Thành công', 'Điều ước đã được gửi đến ba mẹ! (-50 Sao)');
                   setIsWishVisible(false);
                   setWishText('');
@@ -158,7 +161,11 @@ export default function ChildHomeScreen() {
                 <TouchableOpacity 
                   key={idx} 
                   style={[styles.wardrobeItem, equippedItem === item && styles.wardrobeItemEquipped]}
-                  onPress={() => setEquippedItem(equippedItem === item ? null : item)}
+                  onPress={() => {
+                    const nextItem = equippedItem === item ? null : item;
+                    setEquippedItem(nextItem);
+                    if (nextItem) dispatch(equipPetItem({ name: nextItem, cost: 0, owned: true }));
+                  }}
                 >
                   <Text style={styles.wardrobeItemEmoji}>{item}</Text>
                   {equippedItem === item && (
