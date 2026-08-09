@@ -3,6 +3,7 @@ import { User, IUser } from './user.model';
 import { hashPassword, comparePassword } from '../../shared/utils/password';
 import { signAccessToken, signRefreshToken, verifyToken, getRefreshTokenExpiry } from '../../shared/utils/jwt';
 import { AppError } from '../../shared/errors/AppError';
+import { sendEmail } from '../../shared/utils/email';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -29,6 +30,13 @@ export class AuthService {
       status: data.role === 'EXPERT' ? 'PENDING' : 'ACTIVE',
       emailVerificationToken,
     });
+
+    const verificationUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-email?token=${emailVerificationToken}`;
+    await sendEmail(
+      user.email,
+      'Welcome to KidLife - Verify Your Email',
+      `<p>Hi ${user.fullName},</p><p>Please verify your email by clicking <a href="${verificationUrl}">here</a>.</p>`
+    );
 
     return {
       userId: user._id,
@@ -209,10 +217,15 @@ export class AuthService {
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    // TODO: Send reset email (Phase 2 — email service)
-    // For now, in development mode, include token in response
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    await sendEmail(
+      user.email,
+      'KidLife - Password Reset Request',
+      `<p>Hi ${user.fullName},</p><p>You requested a password reset. Click <a href="${resetUrl}">here</a> to reset it. This link expires in 1 hour.</p>`
+    );
+
     return {
-      message: 'If an account exists, a reset link has been sent.',
+      message: 'Password reset link sent to your email.',
       ...(process.env.NODE_ENV === 'development' ? { _devResetToken: resetToken } : {}),
     };
   }

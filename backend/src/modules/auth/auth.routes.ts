@@ -9,12 +9,13 @@ import {
   validateRefreshToken,
 } from './auth.validator';
 import { requireAuth } from '../../shared/middleware/auth';
+import { loginRateLimiter } from '../../shared/middleware/rateLimiter';
 
 const router = Router();
 
 // Public routes (no auth required)
 router.post('/register', validateRegister, AuthController.register);
-router.post('/login', validateLogin, AuthController.login);
+router.post('/login', loginRateLimiter, validateLogin, AuthController.login);
 router.post('/refresh', validateRefreshToken, AuthController.refresh);
 router.post('/logout', validateRefreshToken, AuthController.logout);
 router.post('/forgot-password', validateForgotPassword, AuthController.forgotPassword);

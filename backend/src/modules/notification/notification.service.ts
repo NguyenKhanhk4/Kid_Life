@@ -1,5 +1,6 @@
 import { Notification, NotificationType, NotificationChannel, NotificationPriority } from './notification.model';
 import { AppError } from '../../shared/errors/AppError';
+import { sendPushNotification } from '../../shared/utils/fcm';
 
 export class NotificationService {
   /**
@@ -14,7 +15,7 @@ export class NotificationService {
     priority?: NotificationPriority;
     actionUrl?: string;
   }) {
-    return Notification.create({
+    const notification = await Notification.create({
       receiverId: data.receiverId,
       type: data.type,
       title: data.title,
@@ -23,6 +24,14 @@ export class NotificationService {
       priority: data.priority || 'NORMAL',
       actionUrl: data.actionUrl,
     });
+
+    if (notification.channel === 'PUSH' || notification.channel === 'BOTH') {
+      // Note: In a real app, you'd fetch the user's fcm tokens from the DB here
+      // For now, we simulate the FCM call with a dummy token for demonstration
+      await sendPushNotification('user_fcm_token_placeholder', notification.title, notification.content, { url: notification.actionUrl || '' });
+    }
+
+    return notification;
   }
 
   /**

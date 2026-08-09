@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { errorHandler } from './shared/errors/errorHandler';
+import { loggerMiddleware } from './shared/middleware/logger';
 
 // Dev 1 — Auth, User, Child, Skill, Notification
 import { jwtAuthMiddleware } from './shared/middleware/auth';
