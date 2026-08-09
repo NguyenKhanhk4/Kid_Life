@@ -1,25 +1,54 @@
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-
-const MOCK_CHILDREN = [
-  { id: '1', name: 'Minh Anh', age: 7, avatar: '🧒', level: 5, xp: 1250, maxXp: 1750, skills: ['Tự lập', 'Vệ sinh'] },
-  { id: '2', name: 'Thảo My', age: 5, avatar: '👧', level: 3, xp: 680, maxXp: 1000, skills: ['Giao tiếp', 'Cảm xúc'] },
-  { id: '3', name: 'Nhật Linh', age: 9, avatar: '👦', level: 8, xp: 2100, maxXp: 2500, skills: ['Sáng tạo', 'Tự lập'] },
-];
+import * as childApi from '@/shared/api/childApi';
+import type { ChildProfile } from '@/shared/api/childApi';
 
 export default function ChildManagementScreen() {
   const navigation = useNavigation<any>();
-  const [children, setChildren] = useState(MOCK_CHILDREN);
+  const [children, setChildren] = useState<ChildProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadChildren = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await childApi.getChildren();
+      setChildren(result.children || []);
+    } catch (error: any) {
+      Alert.alert('Lỗi', error?.message || 'Không thể tải danh sách trẻ');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadChildren();
+    }, [loadChildren])
+  );
 
   const handleDelete = (id: string, name: string) => {
     Alert.alert('Xác nhận xóa', `Bạn có chắc muốn xóa hồ sơ bé ${name}?`, [
       { text: 'Hủy', style: 'cancel' },
-      { text: 'Xóa', style: 'destructive', onPress: () => setChildren(children.filter(c => c.id !== id)) },
+      {
+        text: 'Xóa', style: 'destructive', onPress: async () => {
+          try {
+            await childApi.deleteChild(id);
+            setChildren(children.filter(c => c._id !== id));
+          } catch (error: any) {
+            Alert.alert('Lỗi', error?.message || 'Không thể xóa hồ sơ');
+          }
+        }
+      },
     ]);
+  };
+
+  const getAge = (dob: string) => {
+    const diff = Date.now() - new Date(dob).getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
   };
 
   return (
@@ -34,43 +63,49 @@ export default function ChildManagementScreen() {
         </Pressable>
       </View>
 
-      <ScrollView style={styles.list} contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
-        {children.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>👶</Text>
-            <Text style={styles.emptyTitle}>Chưa có hồ sơ trẻ</Text>
-            <Text style={styles.emptyText}>Nhấn nút + để thêm hồ sơ trẻ đầu tiên</Text>
-          </View>
-        )}
-        {children.map((child) => (
-          <Pressable
-            key={child.id}
-            style={[L.card, styles.childCard]}
-            onPress={() => navigation.navigate(Routes.Profile.ChildDetail, { childId: child.id })}
-          >
-            <View style={styles.avatarBox}>
-              <Text style={styles.avatarEmoji}>{child.avatar}</Text>
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={C.primary} />
+        </View>
+      ) : (
+        <ScrollView style={styles.list} contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
+          {children.length === 0 && (
+            <View style={styles.empty}>
+              <Text style={styles.emptyEmoji}>👶</Text>
+              <Text style={styles.emptyTitle}>Chưa có hồ sơ trẻ</Text>
+              <Text style={styles.emptyText}>Nhấn nút + để thêm hồ sơ trẻ đầu tiên</Text>
             </View>
-            <View style={styles.childInfo}>
-              <Text style={styles.childName}>{child.name}</Text>
-              <Text style={styles.childMeta}>{child.age} tuổi  •  Cấp {child.level}</Text>
-              <View style={styles.xpBar}>
-                <View style={[styles.xpFill, { width: `${(child.xp / child.maxXp) * 100}%` }]} />
+          )}
+          {children.map((child) => (
+            <Pressable
+              key={child._id}
+              style={[L.card, styles.childCard]}
+              onPress={() => navigation.navigate(Routes.Profile.ChildDetail, { childId: child._id })}
+            >
+              <View style={styles.avatarBox}>
+                <Text style={styles.avatarEmoji}>🧒</Text>
               </View>
-              <Text style={styles.xpText}>{child.xp.toLocaleString()} / {child.maxXp.toLocaleString()} XP</Text>
-            </View>
-            <View style={styles.actions}>
-              <Pressable style={styles.actionBtn} onPress={() => navigation.navigate(Routes.Profile.EditChild, { childId: child.id })}>
-                <Ionicons name="create-outline" size={18} color={C.primary} />
-              </Pressable>
-              <Pressable style={styles.actionBtn} onPress={() => handleDelete(child.id, child.name)}>
-                <Ionicons name="trash-outline" size={18} color={C.red} />
-              </Pressable>
-            </View>
-          </Pressable>
-        ))}
-        <View style={{ height: 40 }} />
-      </ScrollView>
+              <View style={styles.childInfo}>
+                <Text style={styles.childName}>{child.name}</Text>
+                <Text style={styles.childMeta}>{getAge(child.dateOfBirth)} tuổi  •  Cấp {child.level}</Text>
+                <View style={styles.xpBar}>
+                  <View style={[styles.xpFill, { width: `${Math.min(100, (child.totalPoints / 1000) * 100)}%` }]} />
+                </View>
+                <Text style={styles.xpText}>{child.totalPoints.toLocaleString()} điểm</Text>
+              </View>
+              <View style={styles.actions}>
+                <Pressable style={styles.actionBtn} onPress={() => navigation.navigate(Routes.Profile.EditChild, { childId: child._id })}>
+                  <Ionicons name="create-outline" size={18} color={C.primary} />
+                </Pressable>
+                <Pressable style={styles.actionBtn} onPress={() => handleDelete(child._id, child.name)}>
+                  <Ionicons name="trash-outline" size={18} color={C.red} />
+                </Pressable>
+              </View>
+            </Pressable>
+          ))}
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -81,6 +116,7 @@ const styles = StyleSheet.create({
   headerTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
   addBtn: { width: 42, height: 42, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
   list: { flex: 1 },
+  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   childCard: { flexDirection: 'row', alignItems: 'center', padding: 16, marginBottom: 12 },
   avatarBox: { width: 60, height: 60, borderRadius: 20, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   avatarEmoji: { fontSize: 32 },

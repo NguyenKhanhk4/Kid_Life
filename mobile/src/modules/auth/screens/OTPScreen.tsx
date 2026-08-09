@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Screen, Container, Text, Button, ScreenBackButton } from '@/shared/components';
 import { OTPInput } from '@/shared/components/forms';
 import { Routes } from '@/navigation/constants';
 import { layout, spacing } from '@/theme';
+import * as authApi from '@/shared/api/authApi';
 
 type ParamList = {
   OTP: { email: string };
@@ -20,19 +21,24 @@ export const OTPScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (otp.length < 4) {
       setError(true);
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await authApi.verifyEmail(otp);
+      Alert.alert('Thành công', 'Email đã được xác thực!', [
+        { text: 'OK', onPress: () => navigation.navigate(Routes.Auth.Login) },
+      ]);
+    } catch (err: any) {
+      Alert.alert('Lỗi', err?.message || 'Mã xác thực không hợp lệ. Vui lòng thử lại.');
+      setError(true);
+    } finally {
       setLoading(false);
-      // For this sprint, assume verification routes back to login to login with new credentials
-      // Or in Forgot Password flow, to ResetPassword. We will route to Login for simplicity now.
-      navigation.navigate(Routes.Auth.Login);
-    }, 1000);
+    }
   };
 
   return (
@@ -77,7 +83,10 @@ export const OTPScreen = () => {
           />
           <View style={styles.resendContainer}>
             <Text variant="bodyMedium">Didn&apos;t receive the code? </Text>
-            <Button variant="text" title="Resend" onPress={() => {}} />
+            <Button variant="text" title="Resend" onPress={() => {
+              authApi.forgotPassword(email).catch(() => {});
+              Alert.alert('Đã gửi lại', `Mã mới đã được gửi tới ${email}`);
+            }} />
           </View>
         </View>
       </Container>

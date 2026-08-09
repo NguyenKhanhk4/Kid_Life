@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert } from 
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { kidlifeColors as C } from '@/theme';
+import * as authApi from '@/shared/api/authApi';
 
 export const ChangePasswordScreen = () => {
   const navigation = useNavigation<any>();
@@ -12,14 +13,23 @@ export const ChangePasswordScreen = () => {
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const canSubmit = oldPassword.length >= 1 && newPassword.length >= 8 && newPassword === confirmPassword && oldPassword !== newPassword;
+  const canSubmit = oldPassword.length >= 1 && newPassword.length >= 8 && newPassword === confirmPassword && oldPassword !== newPassword && !loading;
 
-  const handleChange = () => {
+  const handleChange = async () => {
     if (!canSubmit) return;
-    Alert.alert('Thành công', 'Mật khẩu đã được đổi thành công!', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+    setLoading(true);
+    try {
+      await authApi.changePassword(oldPassword, newPassword);
+      Alert.alert('Thành công', 'Mật khẩu đã được đổi thành công!', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Lỗi', error?.message || 'Không thể đổi mật khẩu. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

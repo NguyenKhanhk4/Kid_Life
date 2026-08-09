@@ -1,30 +1,59 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-
-const MOCK: Record<string, any> = {
-  '1': { name: 'Minh Anh', age: 7, avatar: '🧒', level: 5, xp: 1250, maxXp: 1750, streak: 12, missionsCompleted: 48, walletBalance: 350, petName: 'Bông', petMood: '😊', badges: ['⭐', '😊', '🧹'], recentMissions: [
-    { title: 'Dọn dẹp đồ chơi', status: 'completed', xp: 30, emoji: '🧸' },
-    { title: 'Tự gấp quần áo', status: 'completed', xp: 50, emoji: '👕' },
-    { title: 'Đánh răng trước khi ngủ', status: 'pending_review', xp: 30, emoji: '🪥' },
-  ] },
-  '2': { name: 'Thảo My', age: 5, avatar: '👧', level: 3, xp: 680, maxXp: 1000, streak: 5, missionsCompleted: 22, walletBalance: 150, petName: 'Miu', petMood: '😄', badges: ['⭐'], recentMissions: [
-    { title: 'Rửa tay trước khi ăn', status: 'completed', xp: 20, emoji: '🧼' },
-  ] },
-  '3': { name: 'Nhật Linh', age: 9, avatar: '👦', level: 8, xp: 2100, maxXp: 2500, streak: 20, missionsCompleted: 95, walletBalance: 820, petName: 'Rocky', petMood: '🤩', badges: ['⭐', '😊', '🧹', '🎨', '🛡️'], recentMissions: [
-    { title: 'Tô màu sáng tạo', status: 'completed', xp: 40, emoji: '🎨' },
-    { title: 'Xếp sách vở', status: 'todo', xp: 30, emoji: '📔' },
-  ] },
-};
+import * as childApi from '@/shared/api/childApi';
+import type { ChildProfile } from '@/shared/api/childApi';
 
 export default function ChildDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const childId = route.params?.childId ?? '1';
-  const child = MOCK[childId] ?? MOCK['1'];
+  const childId = route.params?.childId;
+
+  const [child, setChild] = useState<ChildProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadChild = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await childApi.getChild(childId);
+      setChild(res);
+    } catch (error: any) {
+      Alert.alert('Lỗi', error?.message || 'Không thể tải thông tin trẻ');
+      navigation.goBack();
+    } finally {
+      setLoading(false);
+    }
+  }, [childId, navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadChild();
+    }, [loadChild])
+  );
+
+  const getAge = (dob?: string) => {
+    if (!dob) return 0;
+    const diff = Date.now() - new Date(dob).getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+  };
+
+  if (loading || !child) {
+    return (
+      <View style={[L.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={C.primary} />
+      </View>
+    );
+  }
+
+  // Fallbacks for MVP fields not in backend yet
+  const maxXp = 1000 * child.level;
+  const badges = ['⭐'];
+  const recentMissions: any[] = [];
+  const petName = 'Thú cưng';
+  const petMood = 'Vui vẻ';
 
   return (
     <View style={L.screen}>
@@ -41,52 +70,56 @@ export default function ChildDetailScreen() {
       <ScrollView contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
         {/* Profile header */}
         <View style={styles.profileCard}>
-          <View style={styles.avatarLarge}><Text style={styles.avatarEmoji}>{child.avatar}</Text></View>
+          <View style={styles.avatarLarge}><Text style={styles.avatarEmoji}>🧒</Text></View>
           <Text style={styles.childName}>{child.name}</Text>
-          <Text style={styles.childMeta}>{child.age} tuổi  •  Cấp {child.level}</Text>
-          <View style={styles.xpBar}><View style={[styles.xpFill, { width: `${(child.xp / child.maxXp) * 100}%` }]} /></View>
-          <Text style={styles.xpLabel}>{child.xp.toLocaleString()} / {child.maxXp.toLocaleString()} XP</Text>
+          <Text style={styles.childMeta}>{getAge(child.dateOfBirth)} tuổi  •  Cấp {child.level}</Text>
+          <View style={styles.xpBar}><View style={[styles.xpFill, { width: `${Math.min(100, (child.totalPoints / maxXp) * 100)}%` }]} /></View>
+          <Text style={styles.xpLabel}>{child.totalPoints.toLocaleString()} / {maxXp.toLocaleString()} XP</Text>
         </View>
 
         {/* Stats */}
         <View style={styles.statsRow}>
-          <StatCard icon="flame" color="#FF6B6B" value={child.streak} label="Ngày liên tiếp" />
-          <StatCard icon="checkmark-done" color={C.green} value={child.missionsCompleted} label="NV hoàn thành" />
-          <StatCard icon="wallet" color={C.purple} value={child.walletBalance} label="Điểm thưởng" />
+          <StatCard icon="flame" color="#FF6B6B" value={1} label="Ngày liên tiếp" />
+          <StatCard icon="checkmark-done" color={C.green} value={0} label="NV hoàn thành" />
+          <StatCard icon="wallet" color={C.purple} value={child.totalPoints} label="Điểm thưởng" />
         </View>
 
         {/* Pet */}
         <Pressable style={[L.card, styles.petCard]}>
           <View style={styles.petAvatar}><Text style={{ fontSize: 30 }}>🐰</Text></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.petName}>{child.petName}</Text>
-            <Text style={styles.petMood}>Tâm trạng: {child.petMood}</Text>
+            <Text style={styles.petName}>{petName}</Text>
+            <Text style={styles.petMood}>Tâm trạng: {petMood}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={C.muted} />
         </Pressable>
 
         {/* Badges */}
-        <Text style={L.sectionTitle}>Huy hiệu ({child.badges.length})</Text>
+        <Text style={L.sectionTitle}>Huy hiệu ({badges.length})</Text>
         <View style={styles.badgesRow}>
-          {child.badges.map((b: string, i: number) => (
+          {badges.map((b: string, i: number) => (
             <View key={i} style={styles.badgeItem}><Text style={{ fontSize: 24 }}>{b}</Text></View>
           ))}
         </View>
 
         {/* Recent missions */}
         <Text style={[L.sectionTitle, { marginTop: 18 }]}>Nhiệm vụ gần đây</Text>
-        {child.recentMissions.map((m: any, i: number) => (
-          <View key={i} style={[L.card, styles.missionItem]}>
-            <View style={styles.missionIcon}><Text style={{ fontSize: 22 }}>{m.emoji}</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.missionTitle}>{m.title}</Text>
-              <Text style={styles.missionXp}>+{m.xp} XP</Text>
+        {recentMissions.length === 0 ? (
+          <Text style={{ color: C.muted, fontSize: 12, marginTop: 10 }}>Chưa có nhiệm vụ nào</Text>
+        ) : (
+          recentMissions.map((m: any, i: number) => (
+            <View key={i} style={[L.card, styles.missionItem]}>
+              <View style={styles.missionIcon}><Text style={{ fontSize: 22 }}>{m.emoji}</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.missionTitle}>{m.title}</Text>
+                <Text style={styles.missionXp}>+{m.xp} XP</Text>
+              </View>
+              <View style={[styles.statusBadge, m.status === 'completed' ? styles.statusCompleted : m.status === 'pending_review' ? styles.statusPending : styles.statusTodo]}>
+                <Text style={styles.statusText}>{m.status === 'completed' ? '✅' : m.status === 'pending_review' ? '⏳' : '📋'}</Text>
+              </View>
             </View>
-            <View style={[styles.statusBadge, m.status === 'completed' ? styles.statusCompleted : m.status === 'pending_review' ? styles.statusPending : styles.statusTodo]}>
-              <Text style={styles.statusText}>{m.status === 'completed' ? '✅' : m.status === 'pending_review' ? '⏳' : '📋'}</Text>
-            </View>
-          </View>
-        ))}
+          ))
+        )}
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>

@@ -1,46 +1,114 @@
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C } from '@/theme';
+import * as childApi from '@/shared/api/childApi';
+import * as skillApi from '@/shared/api/skillApi';
+import type { Skill } from '@/shared/api/skillApi';
+import type { ChildProfile } from '@/shared/api/childApi';
 
-const SKILLS = ['Vệ sinh', 'Tự lập', 'Giao tiếp', 'Cảm xúc', 'Sáng tạo', 'Lễ phép', 'An toàn'];
 const AVATARS = ['🧒', '👧', '👦', '👶', '🧒🏻', '👧🏻', '👦🏻', '🧒🏽'];
-
-const MOCK_DATA: Record<string, any> = {
-  '1': { name: 'Minh Anh', birthYear: '2019', avatar: '🧒', skills: ['Tự lập', 'Vệ sinh'], username: 'minhanh' },
-  '2': { name: 'Thảo My', birthYear: '2021', avatar: '👧', skills: ['Giao tiếp', 'Cảm xúc'], username: 'thaomy' },
-  '3': { name: 'Nhật Linh', birthYear: '2017', avatar: '👦', skills: ['Sáng tạo', 'Tự lập'], username: 'nhatlinh' },
-};
 
 export default function EditChildScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const childId = route.params?.childId ?? '1';
-  const data = MOCK_DATA[childId] ?? MOCK_DATA['1'];
+  const childId = route.params?.childId;
 
-  const [name, setName] = useState(data.name);
-  const [birthYear, setBirthYear] = useState(data.birthYear);
-  const [selectedAvatar, setSelectedAvatar] = useState(data.avatar);
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(data.skills);
-  const [username, setUsername] = useState(data.username);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const toggleSkill = (skill: string) => {
-    setSelectedSkills(prev => prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]);
+  const [name, setName] = useState('');
+  const [birthYear, setBirthYear] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState('🧒');
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [username, setUsername] = useState('');
+  const [skills, setSkills] = useState<Skill[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [childRes, skillsRes] = await Promise.all([
+          childApi.getChild(childId),
+          skillApi.getSkills(),
+        ]);
+        
+        const child: ChildProfile = childRes;
+        setName(child.name);
+        setBirthYear(child.dateOfBirth ? new Date(child.dateOfBirth).getFullYear().toString() : '');
+        setUsername(child.loginUsername || '');
+        setSelectedSkills(child.preferredSkills || []);
+        setSkills(skillsRes.skills || []);
+      } catch (error: any) {
+        Alert.alert('Lỗi', error?.message || 'Không thể tải dữ liệu');
+        navigation.goBack();
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (childId) {
+      fetchData();
+    }
+  }, [childId, navigation]);
+
+  const toggleSkill = (skillId: string) => {
+    setSelectedSkills(prev => prev.includes(skillId) ? prev.filter(s => s !== skillId) : [...prev, skillId]);
   };
 
-  const handleSave = () => {
-    Alert.alert('Thành công', `Đã cập nhật hồ sơ bé ${name}!`, [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+  const handleSave = async () => {
+    if (!name.trim()) { Alert.alert('Lỗi', 'Vui lòng nhập tên bé'); return; }
+    
+    setSaving(true);
+    try {
+      const updateData: any = {
+        name: name.trim(),
+        preferredSkills: selectedSkills,
+      };
+      if (birthYear) {
+        updateData.dateOfBirth = `${birthYear}-06-15`;
+      }
+      if (username) {
+        updateData.loginUsername = username.trim();
+      }
+
+      await childApi.updateChild(childId, updateData);
+      Alert.alert('Thành công', `Đã cập nhật hồ sơ bé ${name}!`, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Lỗi', error?.message || 'Không thể cập nhật hồ sơ');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = () => {
     Alert.alert('Xác nhận xóa', `Bạn có chắc muốn xóa hồ sơ bé ${name}?`, [
       { text: 'Hủy', style: 'cancel' },
-      { text: 'Xóa', style: 'destructive', onPress: () => navigation.goBack() },
+      { 
+        text: 'Xóa', style: 'destructive', onPress: async () => {
+          try {
+            setSaving(true);
+            await childApi.deleteChild(childId);
+            navigation.navigate(Routes.Profile.ChildManagement);
+          } catch (error: any) {
+            Alert.alert('Lỗi', error?.message || 'Không thể xóa hồ sơ');
+            setSaving(false);
+          }
+        }
+      },
     ]);
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={C.primary} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -49,7 +117,7 @@ export default function EditChildScreen() {
           <Ionicons name="chevron-back" size={20} color={C.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>Sửa hồ sơ trẻ</Text>
-        <Pressable style={styles.deleteBtn} onPress={handleDelete}>
+        <Pressable style={styles.deleteBtn} onPress={handleDelete} disabled={saving}>
           <Ionicons name="trash-outline" size={20} color={C.red} />
         </Pressable>
       </View>
@@ -69,15 +137,15 @@ export default function EditChildScreen() {
 
       <Text style={styles.sectionTitle}>Kỹ năng ưu tiên</Text>
       <View style={styles.skillGrid}>
-        {SKILLS.map((skill) => (
-          <Pressable key={skill} style={[styles.skillChip, selectedSkills.includes(skill) && styles.skillChipActive]} onPress={() => toggleSkill(skill)}>
-            <Text style={[styles.skillText, selectedSkills.includes(skill) && styles.skillTextActive]}>{skill}</Text>
+        {skills.map((skill) => (
+          <Pressable key={skill._id} style={[styles.skillChip, selectedSkills.includes(skill._id) && styles.skillChipActive]} onPress={() => toggleSkill(skill._id)}>
+            <Text style={[styles.skillText, selectedSkills.includes(skill._id) && styles.skillTextActive]}>{skill.name}</Text>
           </Pressable>
         ))}
       </View>
 
-      <Pressable style={styles.primaryButton} onPress={handleSave}>
-        <Text style={styles.buttonText}>Lưu thay đổi</Text>
+      <Pressable style={[styles.primaryButton, saving && { opacity: 0.7 }]} onPress={handleSave} disabled={saving}>
+        <Text style={styles.buttonText}>{saving ? 'Đang lưu...' : 'Lưu thay đổi'}</Text>
       </Pressable>
       <View style={{ height: 40 }} />
     </ScrollView>
