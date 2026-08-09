@@ -1,50 +1,70 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, NavigationProp, RouteProp } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-import { submitTask, toggleSubtask, useAppDispatch, useAppSelector } from '@/shared/store';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getMission, submitMission, updateChecklist } from '@/shared/api/missionApi';
 
 export default function MissionDetailScreen() {
-  const navigation = useNavigation<any>();
-  const dispatch = useAppDispatch();
-  const route = useRoute<any>();
-  const { missionId = '1', mode = 'child' } = route.params ?? {};
-  const tasks = useAppSelector((state) => state.kidlife.tasks);
-  const storedTask = tasks.find((task) => task.id === missionId) ?? tasks[0];
+  const navigation = useNavigation<NavigationProp<Record<string, object | undefined>>>();
+  const route = useRoute<RouteProp<Record<string, { missionId?: string, mode?: 'child' | 'parent' }>, string>>();
+  const missionId = route.params?.missionId;
+  const mode = route.params?.mode || 'child';
   const [showUpload, setShowUpload] = useState(false);
+  const queryClient = useQueryClient();
+
+  if (!missionId) {
+    return <View style={[L.screen, styles.emptyState]}><Text style={styles.title}>Không tìm thấy ID nhiệm vụ</Text></View>;
+  }
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['mission', missionId],
+    queryFn: () => {
+      if (!missionId) return Promise.reject(new Error('Missing missionId'));
+      return getMission(missionId);
+    },
+    enabled: !!missionId,
+  });
+
+  const checkMutation = useMutation({
+    mutationFn: ({ itemId, isDone }: { itemId: string, isDone: boolean }) => updateChecklist(missionId, itemId, isDone),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mission', missionId] })
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: () => submitMission(missionId, []), // Empty evidence as we don't have storage yet
+    onSuccess: () => {
+      setShowUpload(false);
+      Alert.alert('Thành công', 'Đã nộp bằng chứng! Chờ ba mẹ duyệt nhé.', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    },
+    onError: (err: Error) => {
+      Alert.alert('Lỗi', err.message || 'Không thể nộp bằng chứng');
+    }
+  });
 
   const toggleCheck = (idx: number) => {
-    const subtask = storedTask?.subtasks[idx];
-    if (storedTask && subtask) {
-      dispatch(toggleSubtask({ taskId: storedTask.id, subtaskId: subtask.id }));
-    }
+    if (!data?.checklist) return;
+    const item = data.checklist[idx];
+    checkMutation.mutate({ itemId: item._id, isDone: !item.isDone });
   };
 
-  if (!storedTask) {
-    return <View style={[L.screen, styles.emptyState]}><Text style={styles.title}>Không tìm thấy nhiệm vụ</Text></View>;
+  if (isLoading) {
+    return <View style={[L.screen, styles.emptyState]}><Text style={styles.title}>Đang tải nhiệm vụ...</Text></View>;
   }
 
-  const mission = {
-    id: storedTask.id,
-    title: storedTask.title,
-    description: 'Bé hoàn thành lần lượt từng bước, sau đó chụp ảnh hoặc quay video để ba mẹ duyệt nhé.',
-    skill: storedTask.category,
-    rewardPoints: storedTask.rewardXP,
-    dueDate: storedTask.time,
-    emoji: storedTask.icon,
-    aiVideoUrl: true,
-    checklist: storedTask.subtasks.map((item) => ({ id: item.id, text: item.title, isDone: item.done })),
-  };
-  const allChecked = mission.checklist.every(i => i.isDone);
+  if (isError || !data) {
+    return <View style={[L.screen, styles.emptyState]}><Text style={styles.title}>Không tìm thấy nhiệm vụ</Text><Text>{error?.message}</Text></View>;
+  }
+
+  const mission = data;
+  const checklist = mission.checklist || [];
+  const allChecked = checklist?.length > 0 && checklist.every(i => i.isDone);
 
   const handleSubmit = () => {
-    dispatch(submitTask({ taskId: mission.id }));
-    setShowUpload(false);
-    Alert.alert('Thành công', 'Đã nộp bằng chứng! Chờ ba mẹ duyệt nhé.', [
-      { text: 'OK', onPress: () => navigation.goBack() }
-    ]);
+    submitMutation.mutate();
   };
 
   return (
@@ -55,7 +75,7 @@ export default function MissionDetailScreen() {
         </Pressable>
         <Text style={styles.headerTitle}>Nhiệm vụ</Text>
         {mode === 'parent' ? (
-          <Pressable style={styles.editBtn} onPress={() => navigation.navigate(Routes.Mission.Create, { editMissionId: mission.id })}>
+          <Pressable style={styles.editBtn} onPress={() => navigation.navigate(Routes.Mission.Create, { editMissionId: mission._id })}>
             <Ionicons name="create-outline" size={20} color={C.primary} />
           </Pressable>
         ) : <View style={styles.back} />}
@@ -64,34 +84,24 @@ export default function MissionDetailScreen() {
       <ScrollView contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
         {/* Header card */}
         <View style={styles.topCard}>
-          <View style={styles.iconBox}><Text style={{ fontSize: 36 }}>{mission.emoji}</Text></View>
+          <View style={styles.iconBox}><Text style={{ fontSize: 36 }}>🎯</Text></View>
           <Text style={styles.title}>{mission.title}</Text>
           <View style={styles.metaRow}>
-            <View style={styles.skillPill}><Text style={styles.skillPillText}>{mission.skill}</Text></View>
+            <View style={styles.skillPill}><Text style={styles.skillPillText}>{mission.skillId || 'Kỹ năng'}</Text></View>
             <View style={styles.xpBadge}><Text style={styles.xpText}>+{mission.rewardPoints} XP</Text></View>
-            <Text style={styles.dateText}>Hạn: {mission.dueDate}</Text>
+            <Text style={styles.dateText}>Hạn: {new Date(mission.dueDate).toLocaleDateString('vi-VN')}</Text>
           </View>
         </View>
 
-        {/* AI Video Link */}
-        {mission.aiVideoUrl && mode === 'child' && (
-          <Pressable style={styles.aiVideoCard} onPress={() => navigation.navigate(Routes.Mission.AIVideoStatus, { prompt: 'preview', templateId: '1' })}>
-            <View style={styles.aiVideoIcon}><Ionicons name="play" size={20} color="#FFF" /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.aiVideoTitle}>Xem video hướng dẫn AI</Text>
-              <Text style={styles.aiVideoDesc}>Nhấn để xem hoạt hình nhiệm vụ</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={C.primary} />
-          </Pressable>
-        )}
+
 
         <Text style={styles.descTitle}>Ghi chú từ ba mẹ:</Text>
         <Text style={styles.descText}>{mission.description}</Text>
 
-        <Text style={[L.sectionTitle, { marginTop: 20 }]}>Checklist ({mission.checklist.filter(c => c.isDone).length}/{mission.checklist.length})</Text>
+        <Text style={[L.sectionTitle, { marginTop: 20 }]}>Checklist ({checklist?.filter(c => c.isDone).length || 0}/{checklist?.length || 0})</Text>
         <View style={styles.checklist}>
-          {mission.checklist.map((item, idx) => (
-            <Pressable key={item.id} style={styles.checkItem} onPress={() => toggleCheck(idx)}>
+          {checklist?.map((item, idx) => (
+            <Pressable key={item._id} style={styles.checkItem} onPress={() => toggleCheck(idx)}>
               <Ionicons name={item.isDone ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={item.isDone ? C.green : C.muted} />
               <Text style={[styles.checkText, item.isDone && styles.checkTextDone]}>{item.text}</Text>
             </Pressable>
@@ -118,23 +128,15 @@ export default function MissionDetailScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nộp bằng chứng</Text>
+              <Text style={styles.modalTitle}>Nộp nhiệm vụ</Text>
               <Pressable onPress={() => setShowUpload(false)}><Ionicons name="close" size={24} color={C.text} /></Pressable>
             </View>
-            <Text style={styles.modalDesc}>Chụp ảnh hoặc quay video bé đang làm nhiệm vụ để ba mẹ duyệt nhé.</Text>
+            <Text style={styles.modalDesc}>Xác nhận nộp nhiệm vụ đã hoàn thành.</Text>
             
             <View style={styles.uploadOptions}>
-              <Pressable style={styles.uploadBox} onPress={handleSubmit}>
-                <Ionicons name="camera" size={32} color={C.primary} />
-                <Text style={styles.uploadLabel}>Chụp ảnh</Text>
-              </Pressable>
-              <Pressable style={styles.uploadBox} onPress={handleSubmit}>
-                <Ionicons name="videocam" size={32} color={C.orange} />
-                <Text style={styles.uploadLabel}>Quay video</Text>
-              </Pressable>
-              <Pressable style={styles.uploadBox} onPress={handleSubmit}>
-                <Ionicons name="images" size={32} color={C.purple} />
-                <Text style={styles.uploadLabel}>Thư viện</Text>
+              <Text style={{ textAlign: 'center', marginBottom: 20, color: C.muted }}>Tính năng đính kèm tệp đang được phát triển.</Text>
+              <Pressable style={styles.submitBtn} onPress={handleSubmit}>
+                <Text style={styles.submitBtnText}>Nộp nhiệm vụ (Không đính kèm)</Text>
               </Pressable>
             </View>
           </View>

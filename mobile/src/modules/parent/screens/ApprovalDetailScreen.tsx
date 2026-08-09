@@ -1,49 +1,79 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert, Modal } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert, Modal, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, NavigationProp, RouteProp } from '@react-navigation/native';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-import { reviewSubmission, useAppDispatch, useAppSelector } from '@/shared/store';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getSubmission, getMission, reviewSubmission } from '@/shared/api/missionApi';
 
 export default function ApprovalDetailScreen() {
-  const navigation = useNavigation<any>();
-  const dispatch = useAppDispatch();
-  const route = useRoute<any>();
+  const navigation = useNavigation<NavigationProp<Record<string, object | undefined>>>();
+  const queryClient = useQueryClient();
+  const route = useRoute<RouteProp<Record<string, { submissionId?: string }>, string>>();
   const subId = route.params?.submissionId;
-  const { submissions, tasks } = useAppSelector((state) => state.kidlife);
-  const sub = submissions.find((item) => item.id === subId) ?? submissions[0];
-  const task = tasks.find((item) => item.id === sub?.taskId);
-  const checklist = task?.subtasks.map((item) => `${item.title} ${item.done ? '✅' : '❌'}`) ?? [];
+
+  const { data: sub, isLoading: subLoading } = useQuery({
+    queryKey: ['submission', subId],
+    queryFn: () => {
+      if (!subId) return Promise.reject(new Error('Missing subId'));
+      return getSubmission(subId);
+    },
+    enabled: !!subId,
+  });
+
+  const { data: missionData, isLoading: missionLoading } = useQuery({
+    queryKey: ['mission', sub?.missionId],
+    queryFn: () => {
+      if (!sub?.missionId) return Promise.reject(new Error('Missing missionId'));
+      return getMission(sub.missionId);
+    },
+    enabled: !!sub?.missionId,
+  });
+
+  const checklist = missionData?.checklist?.map((item) => `${item.text} ${item.isDone ? '✅' : '❌'}`) ?? [];
 
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
 
-  const getConfidenceColor = (c: number) => c >= 80 ? C.green : c >= 50 ? C.orange : C.red;
+
+
+  const reviewMutation = useMutation({
+    mutationFn: (data: { decision: 'approved' | 'rejected', reason?: string }) => {
+      if (!subId) return Promise.reject(new Error('Missing subId'));
+      return reviewSubmission(subId, data.decision, data.reason);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['submission', subId] });
+      Alert.alert('Thành công', 'Đã lưu phản hồi của bạn', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    },
+    onError: (err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : 'Lỗi không xác định';
+      Alert.alert('Lỗi', errorMessage || 'Không thể gửi phản hồi');
+    }
+  });
 
   const handleApprove = () => {
     if (!sub) return;
-    dispatch(reviewSubmission({ submissionId: sub.id, approved: true }));
-    Alert.alert('Đã duyệt!', `Bé ${sub.childName} được cộng điểm thưởng 🎉`, [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+    reviewMutation.mutate({ decision: 'approved' });
   };
 
   const handleReject = () => {
     if (!sub) return;
     if (!rejectReason.trim()) { Alert.alert('Lỗi', 'Vui lòng nhập lý do từ chối'); return; }
-    dispatch(reviewSubmission({ submissionId: sub.id, approved: false, feedback: rejectReason }));
+    reviewMutation.mutate({ decision: 'rejected', reason: rejectReason });
     setShowRejectModal(false);
-    Alert.alert('Đã từ chối', 'Bé sẽ được thông báo và có thể nộp lại', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
   };
 
-  if (!sub) {
-    return <View style={[L.screen, styles.emptyState]}><Text style={styles.missionTitle}>Không tìm thấy bằng chứng</Text></View>;
+  if (subLoading || missionLoading) {
+    return <View style={[L.screen, styles.emptyState]}><Text style={styles.missionTitle}>Đang tải...</Text></View>;
   }
 
-  const aiRecommendation = sub.aiConfidence >= 80 ? 'approve' : 'review';
+  if (!sub || !missionData) {
+    return <View style={[L.screen, styles.emptyState]}><Text style={styles.missionTitle}>Không tìm thấy dữ liệu</Text></View>;
+  }
+
 
   return (
     <View style={L.screen}>
@@ -58,33 +88,29 @@ export default function ApprovalDetailScreen() {
       <ScrollView contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
         {/* Mission info */}
         <View style={[L.card, styles.missionCard]}>
-          <View style={styles.missionIcon}><Text style={{ fontSize: 30 }}>{sub.emoji}</Text></View>
-          <Text style={styles.missionTitle}>{sub.missionTitle}</Text>
-          <View style={styles.childRow}>
-            <Text style={{ fontSize: 18 }}>{sub.childAvatar}</Text>
-            <Text style={styles.childName}>{sub.childName}</Text>
-            <Text style={styles.timeText}>•  {sub.submittedAt}</Text>
+          <View style={styles.missionIcon}><Text style={{ fontSize: 32 }}>🎯</Text></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.missionTitle}>{missionData.title}</Text>
+            <View style={styles.missionMeta}>
+              <View style={styles.skillPill}><Text style={styles.skillPillText}>{missionData.skillId || 'Kỹ năng'}</Text></View>
+              <Text style={styles.xpText}>+{missionData.rewardPoints} XP</Text>
+            </View>
           </View>
         </View>
 
         {/* Evidence preview */}
-        <Text style={L.sectionTitle}>Bằng chứng (1 ảnh)</Text>
-        <Pressable style={styles.evidenceGrid} onPress={() => setShowImageModal(true)}>
-          <View style={styles.evidencePlaceholder}>
-            <Ionicons name="image" size={40} color={C.muted} />
-            <Text style={styles.evidenceText}>Nhấn để xem</Text>
-          </View>
-          <View style={styles.evidencePlaceholder}>
-            <Ionicons name="videocam" size={40} color={C.muted} />
-            <Text style={styles.evidenceText}>Video</Text>
-          </View>
-        </Pressable>
-
-        {/* Note from child */}
-        <View style={[L.card, styles.noteCard]}>
-          <Text style={styles.noteLabel}>💬 Ghi chú từ bé:</Text>
-          <Text style={styles.noteText}>Con đã hoàn thành đủ các bước ạ!</Text>
-        </View>
+        <Text style={L.sectionTitle}>Hình ảnh/Video đính kèm</Text>
+        {sub.evidenceUrls && sub.evidenceUrls.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 10 }}>
+            {sub.evidenceUrls.map((url, idx) => (
+              <View key={idx} style={styles.evidenceCard}>
+                <Image source={{ uri: url }} style={{ width: '100%', height: '100%', borderRadius: 12 }} resizeMode="cover" />
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <Text style={{ color: C.muted, marginVertical: 10 }}>Chưa có tệp đính kèm nào.</Text>
+        )}
 
         {/* Checklist */}
         <Text style={[L.sectionTitle, { marginTop: 14 }]}>Checklist</Text>
@@ -94,43 +120,15 @@ export default function ApprovalDetailScreen() {
           </View>
         ))}
 
-        {/* AI Result */}
-        <Text style={[L.sectionTitle, { marginTop: 18 }]}>Kết quả AI</Text>
-        <View style={[L.card, styles.aiCard]}>
-          <View style={styles.aiHeader}>
-            <Ionicons name="sparkles" size={20} color={C.purple} />
-            <Text style={styles.aiTitle}>Phân tích bằng chứng</Text>
-          </View>
-          <View style={styles.aiRow}>
-            <Text style={styles.aiLabel}>Nhận diện:</Text>
-            <Text style={styles.aiValue}>{sub.aiLabel}</Text>
-          </View>
-          <View style={styles.aiRow}>
-            <Text style={styles.aiLabel}>Độ tin cậy:</Text>
-            <View style={styles.confidenceBarBg}>
-              <View style={[styles.confidenceBarFill, { width: `${sub.aiConfidence}%`, backgroundColor: getConfidenceColor(sub.aiConfidence) }]} />
-            </View>
-            <Text style={[styles.aiValue, { color: getConfidenceColor(sub.aiConfidence) }]}>{sub.aiConfidence}%</Text>
-          </View>
-          <View style={styles.aiRow}>
-            <Text style={styles.aiLabel}>Đề xuất:</Text>
-            <View style={[styles.recPill, aiRecommendation === 'approve' ? { backgroundColor: C.greenSoft } : { backgroundColor: C.orangeSoft }]}>
-              <Text style={[styles.recText, aiRecommendation === 'approve' ? { color: C.green } : { color: C.orange }]}>
-                {aiRecommendation === 'approve' ? '✅ Nên duyệt' : '⚠️ Cần xem xét'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Action buttons */}
-        {sub.status === 'pending' && <View style={styles.actionRow}>
+        <View style={{ height: 20 }} />
+        {sub.status === 'pending_review' && <View style={styles.actionRow}>
           <Pressable style={styles.rejectBtn} onPress={() => setShowRejectModal(true)}>
             <Ionicons name="close-circle" size={20} color={C.red} />
             <Text style={styles.rejectBtnText}>Từ chối</Text>
           </Pressable>
           <Pressable style={styles.approveBtn} onPress={handleApprove}>
             <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-            <Text style={styles.approveBtnText}>Duyệt & Tặng {sub.rewardXP} XP</Text>
+            <Text style={styles.approveBtnText}>Duyệt & Tặng {missionData.rewardPoints} XP</Text>
           </Pressable>
         </View>}
         <View style={{ height: 40 }} />
@@ -162,19 +160,7 @@ export default function ApprovalDetailScreen() {
         </Pressable>
       </Modal>
 
-      {/* Image Preview Modal */}
-      <Modal visible={showImageModal} transparent animationType="fade" onRequestClose={() => setShowImageModal(false)}>
-        <Pressable style={styles.imageModalOverlay} onPress={() => setShowImageModal(false)}>
-          <View style={styles.imageModalContent}>
-            <Ionicons name="image-outline" size={80} color={C.muted} />
-            <Text style={styles.imageModalText}>Xem trước bằng chứng</Text>
-            <Text style={styles.imageModalSub}>(Sẽ hiển thị ảnh/video thực khi kết nối backend)</Text>
-            <Pressable style={styles.imageModalClose} onPress={() => setShowImageModal(false)}>
-              <Text style={styles.imageModalCloseText}>Đóng</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
+
     </View>
   );
 }
@@ -187,10 +173,15 @@ const styles = StyleSheet.create({
   missionCard: { alignItems: 'center', padding: 20, marginBottom: 18 },
   missionIcon: { width: 64, height: 64, borderRadius: 20, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   missionTitle: { color: C.text, fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 8 },
+  missionMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  skillPill: { backgroundColor: '#E4E9FF', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  skillPillText: { color: C.primary, fontSize: 11, fontWeight: '700' },
+  xpText: { color: C.orange, fontSize: 13, fontWeight: '800' },
   childRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   childName: { color: C.text, fontSize: 13, fontWeight: '600' },
   timeText: { color: C.muted, fontSize: 11 },
   evidenceGrid: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  evidenceCard: { width: 120, height: 120, borderRadius: 16, backgroundColor: '#E7EBFF', alignItems: 'center', justifyContent: 'center' },
   evidencePlaceholder: { flex: 1, height: 120, borderRadius: 16, backgroundColor: '#E7EBFF', alignItems: 'center', justifyContent: 'center' },
   evidenceText: { color: C.muted, fontSize: 11, marginTop: 4 },
   noteCard: { padding: 14, marginBottom: 10 },
@@ -222,10 +213,4 @@ const styles = StyleSheet.create({
   modalCancelText: { color: C.muted, fontSize: 13, fontWeight: '700' },
   modalConfirm: { flex: 1, height: 46, borderRadius: 14, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
   modalConfirmText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
-  imageModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
-  imageModalContent: { alignItems: 'center', padding: 30 },
-  imageModalText: { color: '#FFF', fontSize: 18, fontWeight: '700', marginTop: 16 },
-  imageModalSub: { color: '#AAA', fontSize: 12, marginTop: 8 },
-  imageModalClose: { marginTop: 30, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20, backgroundColor: '#FFF' },
-  imageModalCloseText: { color: C.text, fontSize: 13, fontWeight: '700' },
 });

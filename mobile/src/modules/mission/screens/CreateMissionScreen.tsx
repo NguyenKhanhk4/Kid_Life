@@ -1,55 +1,116 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert, KeyboardTypeOptions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, NavigationProp, RouteProp } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-import { addTask, useAppDispatch } from '@/shared/store';
-
-const MOCK_CHILDREN = [
-  { id: '1', name: 'Minh Anh', avatar: '🧒' },
-  { id: '2', name: 'Thảo My', avatar: '👧' },
-];
-
-const SKILLS = ['Vệ sinh', 'Tự lập', 'Giao tiếp', 'Cảm xúc'];
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createMission, updateMission, getMission, CreateMissionInput, UpdateMissionInput } from '@/shared/api/missionApi';
 
 export default function CreateMissionScreen() {
-  const navigation = useNavigation<any>();
-  const dispatch = useAppDispatch();
-  const route = useRoute<any>();
-  const editMode = !!route.params?.editMissionId;
+  const navigation = useNavigation<NavigationProp<Record<string, object | undefined>>>();
+  const queryClient = useQueryClient();
+  const route = useRoute<RouteProp<Record<string, { editMissionId?: string, childId?: string }>, string>>();
+  const editMissionId = route.params?.editMissionId;
+  const passedChildId = route.params?.childId;
 
-  const [title, setTitle] = useState(editMode ? 'Đánh răng trước khi ngủ' : '');
-  const [desc, setDesc] = useState(editMode ? 'Bé nhớ lấy kem bằng hạt đậu...' : '');
-  const [childId, setChildId] = useState('1');
-  const [skill, setSkill] = useState('Vệ sinh');
+  const { data: editData } = useQuery({
+    queryKey: ['mission', editMissionId],
+    queryFn: () => {
+      if (!editMissionId) return Promise.reject(new Error('Missing editMissionId'));
+      return getMission(editMissionId);
+    },
+    enabled: !!editMissionId,
+  });
+
+  const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
   const [points, setPoints] = useState('30');
-  const [time, setTime] = useState('18:30 - 19:00');
-  const [checklist, setChecklist] = useState(editMode ? ['Lấy bàn chải và kem', 'Đánh đủ 2 phút'] : ['']);
+  const [dueDate, setDueDate] = useState('');
+  const [checklist, setChecklist] = useState<{text: string}[]>([{text: ''}]);
+
+  React.useEffect(() => {
+    if (editData) {
+      setTitle(editData.title);
+      setDesc(editData.description);
+      setPoints(String(editData.rewardPoints));
+      setDueDate(editData.dueDate ? new Date(editData.dueDate).toISOString().split('T')[0] : '');
+      setChecklist(editData.checklist?.length ? editData.checklist.map(c => ({ text: c.text })) : [{text: ''}]);
+    }
+  }, [editData]);
 
   const updateChecklist = (text: string, index: number) => {
     const newList = [...checklist];
-    newList[index] = text;
+    newList[index] = { ...newList[index], text };
     setChecklist(newList);
   };
 
+  const createMutation = useMutation({
+    mutationFn: (data: CreateMissionInput) => createMission(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['missions'] });
+      Alert.alert('Thành công', 'Đã tạo nhiệm vụ mới', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    },
+    onError: (err: Error) => Alert.alert('Lỗi', err.message || 'Không thể tạo nhiệm vụ')
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: UpdateMissionInput) => {
+      if (!editMissionId) return Promise.reject(new Error('Missing editMissionId'));
+      return updateMission(editMissionId, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mission', editMissionId] });
+      queryClient.invalidateQueries({ queryKey: ['missions'] });
+      Alert.alert('Thành công', 'Đã cập nhật nhiệm vụ', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    },
+    onError: (err: Error) => Alert.alert('Lỗi', err.message || 'Không thể cập nhật nhiệm vụ')
+  });
+
   const handleSave = () => {
-    if (!title.trim()) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên nhiệm vụ.');
+    if (!title.trim() || !desc.trim()) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên và mô tả nhiệm vụ.');
       return;
     }
-    if (!editMode) {
-      dispatch(addTask({
-        title,
-        time,
-        rewardXP: Math.max(1, Number(points) || 30),
-        category: skill,
-        subtasks: checklist,
-      }));
+    const childToUse = editData?.childId || passedChildId;
+    if (!childToUse) {
+      Alert.alert('Lỗi', 'Không xác định được trẻ. Vui lòng thử lại.');
+      return;
     }
-    Alert.alert('Thành công', editMode ? 'Đã cập nhật nhiệm vụ' : 'Đã tạo nhiệm vụ mới', [
-      { text: 'OK', onPress: () => navigation.goBack() }
-    ]);
+
+    let parsedDate = new Date();
+    if (dueDate.trim()) {
+      const dateParts = dueDate.split('-');
+      if (dateParts.length !== 3 || isNaN(Date.parse(dueDate))) {
+        Alert.alert('Lỗi', 'Ngày hết hạn không hợp lệ (YYYY-MM-DD)');
+        return;
+      }
+      parsedDate = new Date(dueDate);
+      if (parsedDate < new Date(new Date().setHours(0,0,0,0))) {
+        Alert.alert('Lỗi', 'Ngày hết hạn phải từ hôm nay trở đi');
+        return;
+      }
+    }
+
+    if (editMissionId) {
+      const payload: UpdateMissionInput = {
+        title,
+        description: desc,
+        rewardPoints: Math.max(1, Number(points) || 30),
+        dueDate: parsedDate.toISOString(),
+      };
+      updateMutation.mutate(payload);
+    } else {
+      const payload: CreateMissionInput = {
+        title,
+        description: desc,
+        rewardPoints: Math.max(1, Number(points) || 30),
+        dueDate: parsedDate.toISOString(),
+        childId: childToUse,
+        checklist: checklist.filter(c => c.text.trim()).map(c => ({ text: c.text }))
+      };
+      createMutation.mutate(payload);
+    }
   };
 
   return (
@@ -58,55 +119,31 @@ export default function CreateMissionScreen() {
         <Pressable style={styles.back} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={20} color={C.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{editMode ? 'Sửa nhiệm vụ' : 'Tạo nhiệm vụ mới'}</Text>
+        <Text style={styles.headerTitle}>{editMissionId ? 'Sửa nhiệm vụ' : 'Tạo nhiệm vụ'}</Text>
         <View style={styles.back} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {/* Child selector */}
-        <Text style={styles.sectionLabel}>Giao cho bé</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowList}>
-          {MOCK_CHILDREN.map(c => (
-            <Pressable key={c.id} style={[styles.childChip, childId === c.id && styles.childChipActive]} onPress={() => setChildId(c.id)}>
-              <Text style={{ fontSize: 20, marginRight: 6 }}>{c.avatar}</Text>
-              <Text style={[styles.childChipText, childId === c.id && styles.childChipTextActive]}>{c.name}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+
 
         <Field label="Tên nhiệm vụ" placeholder="VD: Đánh răng trước khi ngủ" value={title} onChangeText={setTitle} />
         
-        {/* AI Video Button */}
-        <Pressable style={styles.aiBtn} onPress={() => navigation.navigate(Routes.Mission.AIVideoPrompt, { missionTitle: title })}>
-          <View style={styles.aiIconBox}><Ionicons name="sparkles" size={18} color="#FFF" /></View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.aiBtnTitle}>🎬 Tạo video AI cho nhiệm vụ</Text>
-            <Text style={styles.aiBtnDesc}>Sinh video hoạt hình hướng dẫn bé làm</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={C.primary} />
-        </Pressable>
 
         <Field label="Mô tả / Lời nhắc" placeholder="Nhập ghi chú cho bé..." value={desc} onChangeText={setDesc} multiline />
 
         {/* Skill selector */}
         <Text style={styles.sectionLabel}>Kỹ năng phát triển</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowList}>
-          {SKILLS.map(s => (
-            <Pressable key={s} style={[styles.skillChip, skill === s && styles.skillChipActive]} onPress={() => setSkill(s)}>
-              <Text style={[styles.skillText, skill === s && styles.skillTextActive]}>{s}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <Text style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>Tính năng Kỹ năng hiện chưa khả dụng.</Text>
 
         <Field label="Điểm thưởng (XP)" placeholder="VD: 30" value={points} onChangeText={setPoints} keyboardType="numeric" />
-        <Field label="Khung giờ thực hiện" placeholder="VD: 18:30 - 19:00" value={time} onChangeText={setTime} />
+        <Field label="Ngày hết hạn" placeholder="YYYY-MM-DD" value={dueDate} onChangeText={setDueDate} />
 
         {/* Checklist */}
         <Text style={styles.sectionLabel}>Checklist (Các bước bé cần làm)</Text>
         {checklist.map((item, i) => (
           <View key={i} style={styles.checkRow}>
             <Ionicons name="ellipse-outline" size={20} color={C.muted} />
-            <TextInput style={styles.checkInput} placeholder={`Bước ${i + 1}`} value={item} onChangeText={(t) => updateChecklist(t, i)} />
+            <TextInput style={styles.checkInput} placeholder={`Bước ${i + 1}`} value={item.text} onChangeText={(t) => updateChecklist(t, i)} />
             {checklist.length > 1 && (
               <Pressable onPress={() => setChecklist(checklist.filter((_, idx) => idx !== i))}>
                 <Ionicons name="close-circle" size={20} color={C.redSoft} />
@@ -114,7 +151,7 @@ export default function CreateMissionScreen() {
             )}
           </View>
         ))}
-        <Pressable style={styles.addCheckBtn} onPress={() => setChecklist([...checklist, ''])}>
+        <Pressable style={styles.addCheckBtn} onPress={() => setChecklist([...checklist, {text: ''}])}>
           <Ionicons name="add-circle-outline" size={18} color={C.primary} />
           <Text style={styles.addCheckText}>Thêm bước</Text>
         </Pressable>
@@ -124,14 +161,14 @@ export default function CreateMissionScreen() {
       {/* Footer */}
       <View style={styles.footer}>
         <Pressable style={styles.submitBtn} onPress={handleSave}>
-          <Text style={styles.submitBtnText}>{editMode ? 'Lưu thay đổi' : 'Phát hành nhiệm vụ'}</Text>
+          <Text style={styles.submitBtnText}>{editMissionId ? 'Lưu thay đổi' : 'Phát hành nhiệm vụ'}</Text>
         </Pressable>
       </View>
     </View>
   );
 }
 
-function Field({ label, placeholder, value, onChangeText, multiline, keyboardType }: any) {
+function Field({ label, placeholder, value, onChangeText, multiline, keyboardType }: { label: string, placeholder: string, value: string, onChangeText: (t: string) => void, multiline?: boolean, keyboardType?: KeyboardTypeOptions }) {
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.label}>{label}</Text>

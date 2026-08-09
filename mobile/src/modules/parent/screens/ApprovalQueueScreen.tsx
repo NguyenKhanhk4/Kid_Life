@@ -1,21 +1,30 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, NavigationProp, RouteProp } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
-import { useAppSelector } from '@/shared/store';
+import { useQuery } from '@tanstack/react-query';
+import { getSubmissions } from '@/shared/api/missionApi';
 
-type FilterType = 'all' | 'pending' | 'approved' | 'rejected';
+type FilterType = 'all' | 'pending_review' | 'approved' | 'rejected';
 
 export default function ApprovalQueueScreen() {
-  const navigation = useNavigation<any>();
-  const submissions = useAppSelector((state) => state.kidlife.submissions);
-  const [filter, setFilter] = useState<FilterType>('pending');
+  const navigation = useNavigation<NavigationProp<Record<string, object | undefined>>>();
+  const route = useRoute<RouteProp<Record<string, { childId?: string }>, string>>();
+  const childId = route.params?.childId;
+  const [filter, setFilter] = useState<FilterType>('pending_review');
 
-  const filtered = filter === 'all' ? submissions : submissions.filter(s => s.status === filter);
+  const { data: submissions, isLoading } = useQuery({
+    queryKey: ['submissions', childId, filter],
+    queryFn: () => {
+      if (!childId) return Promise.reject(new Error('Missing childId'));
+      return getSubmissions(childId, filter === 'all' ? undefined : filter);
+    },
+    enabled: !!childId,
+  });
 
-  const getConfidenceColor = (c: number) => c >= 80 ? C.green : c >= 50 ? C.orange : C.red;
+  const filtered = submissions || [];
 
   return (
     <View style={L.screen}>
@@ -29,7 +38,7 @@ export default function ApprovalQueueScreen() {
 
       {/* Filter tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={styles.filterRow}>
-        {([['all', 'Tất cả'], ['pending', 'Chờ duyệt'], ['approved', 'Đã duyệt'], ['rejected', 'Từ chối']] as [FilterType, string][]).map(([key, label]) => (
+        {([['all', 'Tất cả'], ['pending_review', 'Chờ duyệt'], ['approved', 'Đã duyệt'], ['rejected', 'Từ chối']] as [FilterType, string][]).map(([key, label]) => (
           <Pressable key={key} style={[styles.filterChip, filter === key && styles.filterChipActive]} onPress={() => setFilter(key)}>
             <Text style={[styles.filterText, filter === key && styles.filterTextActive]}>{label}</Text>
           </Pressable>
@@ -37,7 +46,18 @@ export default function ApprovalQueueScreen() {
       </ScrollView>
 
       <ScrollView contentContainerStyle={L.content} showsVerticalScrollIndicator={false}>
-        {filtered.length === 0 && (
+        {!childId && (
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>Chưa chọn trẻ</Text>
+            <Text style={styles.emptyText}>Vui lòng chọn trẻ để xem bằng chứng</Text>
+          </View>
+        )}
+        {childId && isLoading && (
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>Đang tải...</Text>
+          </View>
+        )}
+        {childId && !isLoading && filtered.length === 0 && (
           <View style={styles.empty}>
             <Ionicons name="checkmark-done-circle-outline" size={60} color={C.muted} />
             <Text style={styles.emptyTitle}>Không có bằng chứng</Text>
@@ -46,30 +66,23 @@ export default function ApprovalQueueScreen() {
         )}
         {filtered.map((sub) => (
           <Pressable
-            key={sub.id}
+            key={sub._id}
             style={[L.card, styles.subCard]}
-            onPress={() => navigation.navigate(Routes.Parent.ApprovalDetail, { submissionId: sub.id })}
+            onPress={() => navigation.navigate(Routes.Parent.ApprovalDetail, { submissionId: sub._id })}
           >
             <View style={styles.subTop}>
-              <View style={styles.subIcon}><Text style={{ fontSize: 24 }}>{sub.emoji}</Text></View>
+              <View style={styles.subIcon}><Text style={{ fontSize: 24 }}>🎯</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.subTitle}>{sub.missionTitle}</Text>
+                <Text style={styles.subTitle}>Nhiệm vụ {sub.missionId.slice(-4)}</Text>
                 <View style={styles.subMeta}>
-                  <Text style={{ fontSize: 14 }}>{sub.childAvatar}</Text>
-                  <Text style={styles.subChild}>{sub.childName}</Text>
-                  <Text style={styles.subTime}>•  {sub.submittedAt}</Text>
+                  <Text style={styles.subChild}>Bé {sub.childId}</Text>
+                  <Text style={styles.subTime}>•  {sub.createdAt ? new Date(sub.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color={C.muted} />
             </View>
             <View style={styles.subBottom}>
-              <View style={styles.aiRow}>
-                <Ionicons name="sparkles" size={14} color={C.purple} />
-                <Text style={styles.aiLabel}>AI: {sub.aiLabel}</Text>
-                <View style={[styles.confidencePill, { backgroundColor: `${getConfidenceColor(sub.aiConfidence)}18` }]}>
-                  <Text style={[styles.confidenceText, { color: getConfidenceColor(sub.aiConfidence) }]}>{sub.aiConfidence}%</Text>
-                </View>
-              </View>
+
               <View style={[styles.statusPill,
                 sub.status === 'approved' ? styles.statusApproved :
                 sub.status === 'rejected' ? styles.statusRejected : styles.statusPending
@@ -103,16 +116,12 @@ const styles = StyleSheet.create({
   subMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   subChild: { color: C.muted, fontSize: 11, fontWeight: '600' },
   subTime: { color: C.muted, fontSize: 11 },
-  subBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTopWidth: 1, borderTopColor: '#EEF0F8' },
-  aiRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  aiLabel: { color: C.purple, fontSize: 11, fontWeight: '600' },
-  confidencePill: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  confidenceText: { fontSize: 11, fontWeight: '800' },
-  statusPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  subBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 12 },
+  statusPill: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999 },
+  statusPending: { backgroundColor: C.orangeSoft },
   statusApproved: { backgroundColor: C.greenSoft },
   statusRejected: { backgroundColor: C.redSoft },
-  statusPending: { backgroundColor: C.orangeSoft },
-  statusText: { fontSize: 11, fontWeight: '700' },
+  statusText: { fontSize: 13, fontWeight: '700', color: C.text },
   empty: { alignItems: 'center', paddingTop: 80 },
   emptyTitle: { color: C.text, fontSize: 18, fontWeight: '700', marginTop: 12 },
   emptyText: { color: C.muted, fontSize: 13, marginTop: 4 },

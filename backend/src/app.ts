@@ -9,6 +9,8 @@ import { rewardRoutes } from './modules/reward/reward.routes';
 import { certificateRoutes } from './modules/certificate/certificate.routes';
 import { paymentRoutes } from './modules/payment/payment.routes';
 import { reportRoutes } from './modules/report/report.routes';
+import { missionRoutes } from './modules/mission/mission.routes';
+import { submissionRoutes } from './modules/submission/submission.routes';
 
 const app = express();
 
@@ -36,6 +38,8 @@ v1Router.use(rewardRoutes);
 v1Router.use(certificateRoutes);
 v1Router.use(paymentRoutes);
 v1Router.use('/reports', reportRoutes);
+v1Router.use('/missions', missionRoutes);
+v1Router.use('/submissions', submissionRoutes);
 
 app.use('/api/v1', v1Router);
 

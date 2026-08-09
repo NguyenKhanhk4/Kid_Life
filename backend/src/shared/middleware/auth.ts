@@ -48,7 +48,7 @@ export const requireRole = (roles: AuthUser['role'][]) => {
  */
 export const requireChildScope = (targetChildIdParam: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const targetChildId = req.params[targetChildIdParam] || req.body[targetChildIdParam];
+    const targetChildId = req.params[targetChildIdParam] || req.body[targetChildIdParam] || req.query[targetChildIdParam];
     if (!targetChildId) {
       return next(new AppError('Child ID is required', 400, 'BAD_REQUEST'));
     }
@@ -71,4 +71,18 @@ export const requireChildScope = (targetChildIdParam: string) => {
 
     next();
   };
+};
+
+export const verifyChildScope = (user: AuthUser, targetChildId: string) => {
+  if (user.role === 'CHILD') {
+    if (user.id !== targetChildId) {
+      throw new AppError('Forbidden - Cannot access another child profile', 403, 'FORBIDDEN');
+    }
+  } else if (user.role === 'PARENT') {
+    if (!user.familyId || !user.allowedChildIds?.includes(targetChildId)) {
+      throw new AppError('Forbidden - Child is outside the trusted family scope', 403, 'FORBIDDEN');
+    }
+  } else if (user.role !== 'ADMIN') {
+    throw new AppError('Forbidden', 403, 'FORBIDDEN');
+  }
 };

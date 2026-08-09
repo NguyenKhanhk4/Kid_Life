@@ -7,15 +7,16 @@ export class WalletService {
   /**
    * Internal method to ensure a wallet exists for transactions.
    */
-  static async ensureWallet(childId: string) {
-    let wallet = await Wallet.findOne({ childId });
+  static async ensureWallet(childId: string, session?: mongoose.ClientSession) {
+    let wallet = await Wallet.findOne({ childId }).session(session || null);
     if (!wallet) {
       try {
-        wallet = await Wallet.create({ childId, availableBalance: 0, savingsBalance: 0 });
+        const wallets = await Wallet.create([{ childId, availableBalance: 0, savingsBalance: 0 }], { session });
+        wallet = wallets[0];
       } catch (error: unknown) {
         // Handle race condition if created simultaneously
         if (isMongoServerError(error) && error.code === 11000) {
-          wallet = await Wallet.findOne({ childId });
+          wallet = await Wallet.findOne({ childId }).session(session || null);
         } else {
           throw error;
         }
@@ -78,23 +79,26 @@ export class WalletService {
     amount: number, 
     sourceType: SourceType, 
     sourceId: string, 
-    idempotencyKey: string
+    idempotencyKey: string,
+    sessionToUse?: mongoose.ClientSession
   ) {
     if (!Number.isInteger(amount) || amount <= 0) {
       throw new AppError('Amount must be a positive integer', 400, 'INVALID_AMOUNT');
     }
 
-    const existingTx = await this.checkIdempotency(idempotencyKey, childId, amount, 'CREDIT', sourceType, sourceId);
-    if (existingTx) {
-      return { wallet: await this.getWallet(childId), transaction: existingTx };
+    if (!sessionToUse) {
+      const existingTx = await this.checkIdempotency(idempotencyKey, childId, amount, 'CREDIT', sourceType, sourceId);
+      if (existingTx) {
+        return { wallet: await this.getWallet(childId), transaction: existingTx };
+      }
     }
 
-    await this.ensureWallet(childId);
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    const session = sessionToUse || await mongoose.startSession();
+    if (!sessionToUse) session.startTransaction();
     
     try {
+      await this.ensureWallet(childId, session);
+
       const wallet = await Wallet.findOne({ childId }).session(session);
       if (!wallet) throw new AppError('Wallet not found', 404, 'WALLET_NOT_FOUND');
 
@@ -115,16 +119,16 @@ export class WalletService {
       });
       await transaction.save({ session });
 
-      await session.commitTransaction();
+      if (!sessionToUse) await session.commitTransaction();
       return { wallet, transaction };
     } catch (error: unknown) {
-      await session.abortTransaction();
+      if (!sessionToUse) await session.abortTransaction();
       if (isMongoServerError(error) && error.code === 11000) {
         throw new AppError('Transaction already processed', 409, 'DUPLICATE_TRANSACTION');
       }
       throw error;
     } finally {
-      session.endSession();
+      if (!sessionToUse) session.endSession();
     }
   }
 
