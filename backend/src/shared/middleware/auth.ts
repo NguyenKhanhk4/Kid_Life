@@ -113,8 +113,11 @@ export const jwtAuthMiddleware = async (req: Request, _res: Response, next: Next
     let payload;
     try {
       payload = verifyToken(token);
-    } catch {
-      return next(new AppError('Invalid or expired token', 401, 'INVALID_TOKEN'));
+    } catch (err: any) {
+      if (err.name === 'TokenExpiredError') {
+        return next(new AppError('Token expired', 401, 'TOKEN_EXPIRED'));
+      }
+      return next(new AppError('Invalid token', 401, 'INVALID_TOKEN'));
     }
 
     const user = await User.findById(payload.userId);
