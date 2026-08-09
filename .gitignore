@@ -4,6 +4,7 @@
 # NodeJS / Dependencies
 # ----------------------------------------------------------------------------
 node_modules/
+backend/dist_test/
 npm-debug.log
 yarn-error.log
 yarn-debug.log

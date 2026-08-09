@@ -1,16 +1,17 @@
-import express from 'express';
-import cors from 'cors';
+import { app } from './app';
+import { connectDB } from './config/database';
+import { env } from './config/env';
 
-const app = express();
-const port = process.env.PORT || 3000;
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(env.port, () => {
+      console.log(`Server is running on port ${env.port} in ${env.nodeEnv} mode`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
 
-app.use(cors());
-app.use(express.json());
-
-app.get('/', (req, res) => {
-  res.send('KidLife API is running');
-});
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+startServer();
