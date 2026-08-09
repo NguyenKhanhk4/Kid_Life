@@ -48,6 +48,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
+    "test:state": "node scripts/kidlife-state-smoke.cjs",
     "typecheck": "tsc --noEmit"
   },
   "private": true

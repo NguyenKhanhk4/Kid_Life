@@ -4,6 +4,7 @@
 # NodeJS / Dependencies
 # ----------------------------------------------------------------------------
 node_modules/
+backend/dist_test/
 npm-debug.log
 yarn-error.log
 yarn-debug.log
@@ -90,6 +91,10 @@ coverage/
 # ----------------------------------------------------------------------------
 Thumbs.db
 
-# Analysis Documents
+# Analysis & Documentation
 KidLife_Business_Analysis.md
 KidLife_Developer_Analysis.md
+PRODUCT_FEATURES.md
+docs/
+*.md
+!README.md

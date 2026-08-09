@@ -1,8 +1,9 @@
 import React from 'react';
 import { StyleSheet, View, TouchableOpacity, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { Screen, Container, Text } from '@/shared/components';
-import { Navigators } from '@/navigation/constants';
+import { Navigators, Routes } from '@/navigation/constants';
 import { spacing, shape, shadow } from '@/theme';
 
 const { width } = Dimensions.get('window');
@@ -56,9 +57,23 @@ export const RoleSelectionScreen = () => {
     });
   };
 
+  const handleBack = () => {
+    navigation.replace(Routes.Auth.Login);
+  };
+
   return (
     <Screen safeArea>
       <Container style={styles.container}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại màn hình đăng nhập"
+          activeOpacity={0.75}
+          style={styles.backButton}
+          onPress={handleBack}
+        >
+          <Ionicons name="chevron-back" size={22} color="#2445FF" />
+        </TouchableOpacity>
+
         {/* Header */}
         <View style={styles.header}>
           <Text variant="displaySmall" align="center" style={styles.heading}>
@@ -110,6 +125,18 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing['2xl'],
     justifyContent: 'center',
+  },
+  backButton: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.lg,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E4E9FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',

@@ -10,8 +10,6 @@ import { Screen, Container, Text } from '@/shared/components';
 import HomeParent from '@/modules/parent/screens/HomeParent';
 import TasksParent from '@/modules/parent/screens/TasksParent';
 import ChildHomeScreen from '@/modules/child/screens/ChildHomeScreen';
-import WalletScreen from '@/modules/child/screens/WalletScreen';
-import PetScreen from '@/modules/child/screens/PetScreen';
 import ChildTasksScreen from '@/modules/child/screens/ChildTasksScreen';
 import StoreScreen from '@/modules/child/screens/StoreScreen';
 import AchievementsScreen from '@/modules/child/screens/AchievementsScreen';
@@ -46,13 +44,11 @@ const childTabs: TabConfig[] = [
 
 export const BottomTabNavigator = ({ role = 'parent' }: { role?: AppRole }) => {
   const tabs = role === 'child' ? childTabs : parentTabs;
-  return <Tab.Navigator screenOptions={defaultTabOptions}>
+  return <Tab.Navigator backBehavior="history" screenOptions={defaultTabOptions}>
     {tabs.map((config) => <Tab.Screen key={config.route} name={config.route} options={{ title: config.label, tabBarIcon: ({ color, size, focused }) => getTabIcon(focused ? config.activeIcon : config.icon, focused, color, size), tabBarAccessibilityLabel: `${config.label} Tab` }}>
       {() => {
         if (role === 'child') {
           if (config.route === Routes.Main.Home) return <ChildHomeScreen />;
-          if (config.route === Routes.Main.Community) return <WalletScreen />;
-          if (config.route === Routes.Main.Notifications) return <PetScreen />;
           if (config.route === Routes.Main.Tasks) return <ChildTasksScreen />;
           if (config.route === Routes.Main.Community) return <StoreScreen />;
           if (config.route === Routes.Main.Notifications) return <AchievementsScreen />;

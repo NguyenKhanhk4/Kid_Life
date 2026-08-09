@@ -1,17 +1,18 @@
 import { configureStore } from '@reduxjs/toolkit';
+import { kidlifeReducer } from './kidlifeSlice';
 
-// Placeholder store configuration.
-// Slices will be added here as features are implemented.
 export const store = configureStore({
   reducer: {
-    // Add reducers here later
-    _dummy: (state = {}) => state,
+    kidlife: kidlifeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // Often disabled in React Native due to navigation state serialization
+      serializableCheck: false,
     }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+export * from './hooks';
+export * from './kidlifeSlice';
