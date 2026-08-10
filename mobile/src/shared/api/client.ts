@@ -75,7 +75,10 @@ export const fetchApi = async <T>(
       return json.data;
     }
 
+<<<<<<< HEAD
+=======
     // According to contract, successful response should have 'data' (unless 204)
+>>>>>>> 9c100f5821007e1b02b22adb6b13a80ea7ea71a3
     throw new ApiError(
       'Response missing data payload',
       'MALFORMED_RESPONSE',
@@ -83,6 +86,51 @@ export const fetchApi = async <T>(
     );
   } catch (error: unknown) {
     if (error instanceof ApiError) {
+<<<<<<< HEAD
+      // Auto-refresh token logic
+      if (error.statusCode === 401) {
+        const refreshToken = await SecureStore.getItemAsync('refresh_token');
+        if (refreshToken) {
+          try {
+            const refreshRes = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken })
+            });
+
+            if (refreshRes.ok) {
+              const refreshJson = await refreshRes.json();
+              if (refreshJson.data?.accessToken && refreshJson.data?.refreshToken) {
+                await SecureStore.setItemAsync('user_token', refreshJson.data.accessToken);
+                await SecureStore.setItemAsync('refresh_token', refreshJson.data.refreshToken);
+                
+                // Retry the original request
+                const newHeaders = new Headers(options.headers);
+                newHeaders.set('Content-Type', 'application/json');
+                newHeaders.set('Authorization', `Bearer ${refreshJson.data.accessToken}`);
+                
+                const retryRes = await fetch(`${API_BASE_URL}${endpoint}`, {
+                  ...options,
+                  headers: newHeaders
+                });
+                
+                if (retryRes.status === 204) return {} as T;
+                const retryJson = await retryRes.json();
+                if (retryRes.ok && retryJson.data !== undefined) {
+                  return retryJson.data as T;
+                }
+              }
+            }
+          } catch (refreshErr) {
+            // Refresh failed, fall through to throwing the original 401
+          }
+          // If refresh fails, clear tokens to force re-login
+          await SecureStore.deleteItemAsync('user_token');
+          await SecureStore.deleteItemAsync('refresh_token');
+        }
+      }
+=======
+>>>>>>> 9c100f5821007e1b02b22adb6b13a80ea7ea71a3
       throw error;
     }
     if (error instanceof Error && error.name === 'AbortError') {

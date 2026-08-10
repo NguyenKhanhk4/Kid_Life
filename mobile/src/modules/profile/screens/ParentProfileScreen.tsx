@@ -1,20 +1,43 @@
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C, kidlifeLayout as L } from '@/theme';
+import * as userApi from '@/shared/api/userApi';
 
 export default function ParentProfileScreen() {
   const navigation = useNavigation<any>();
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState('Nguyễn Văn An');
-  const [phone, setPhone] = useState('0912 345 678');
-  const [email] = useState('an.nguyen@email.com');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    setEditing(false);
-    Alert.alert('Thành công', 'Đã cập nhật thông tin!');
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await userApi.getMe();
+        setName(profile.fullName || '');
+        setPhone(profile.phone || '');
+        setEmail(profile.email || '');
+      } catch (error: any) {
+        Alert.alert('Lỗi', error?.message || 'Không thể tải thông tin');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await userApi.updateMe({ fullName: name, phone });
+      setEditing(false);
+      Alert.alert('Thành công', 'Đã cập nhật thông tin!');
+    } catch (error: any) {
+      Alert.alert('Lỗi', error?.message || 'Không thể cập nhật');
+    }
   };
 
   return (

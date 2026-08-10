@@ -1,25 +1,36 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Routes } from '@/navigation/constants';
 import { kidlifeColors as C } from '@/theme';
+import * as authApi from '@/shared/api/authApi';
 
 export const ResetPasswordScreen = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const token = route.params?.token || '';
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (password.length < 8) return;
     if (password !== confirmPassword) return;
-    setSuccess(true);
-    setTimeout(() => {
-      navigation.navigate(Routes.Auth.Login);
-    }, 1500);
+    setLoading(true);
+    try {
+      await authApi.resetPassword(token, password);
+      setSuccess(true);
+      setTimeout(() => {
+        navigation.navigate(Routes.Auth.Login);
+      }, 1500);
+    } catch (error: any) {
+      // Show inline error — for simplicity, keep success false
+      setLoading(false);
+    }
   };
 
   if (success) {

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Container, Text, Input, Button } from '@/shared/components';
 import { Routes } from '@/navigation/constants';
 import { layout, spacing } from '@/theme';
+import * as authApi from '@/shared/api/authApi';
 
 export const ForgotPasswordScreen = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -11,12 +12,19 @@ export const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    if (!email.trim()) return;
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await authApi.forgotPassword(email.trim());
+      Alert.alert('Thành công', 'Mã xác nhận đã được gửi tới email của bạn.', [
+        { text: 'OK', onPress: () => navigation.navigate(Routes.Auth.OTP, { email: email.trim() }) },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Lỗi', error?.message || 'Không thể gửi mã xác nhận. Vui lòng thử lại.');
+    } finally {
       setLoading(false);
-      navigation.navigate(Routes.Auth.OTP, { email });
-    }, 1000);
+    }
   };
 
   return (

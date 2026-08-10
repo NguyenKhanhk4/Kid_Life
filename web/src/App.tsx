@@ -1,3 +1,18 @@
+<<<<<<< HEAD
+import { RouterProvider } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { router } from './router';
+
+function App() {
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
+}
+
+export default App;
+=======
 import { useState, useEffect } from "react";
 import {
   getAdminOverview,
@@ -374,3 +389,4 @@ function NavItem({
     </button>
   );
 }
+>>>>>>> 9c100f5821007e1b02b22adb6b13a80ea7ea71a3

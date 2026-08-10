@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { kidlifeReducer } from './kidlifeSlice';
+import { authReducer } from './authSlice';
 
 export const store = configureStore({
   reducer: {
     kidlife: kidlifeReducer,
+    auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -16,3 +18,4 @@ export type AppDispatch = typeof store.dispatch;
 
 export * from './hooks';
 export * from './kidlifeSlice';
+export * from './authSlice';
