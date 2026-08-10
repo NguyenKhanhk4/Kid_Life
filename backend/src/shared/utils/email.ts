@@ -13,19 +13,14 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
-  if (env.nodeEnv === 'development') {
-    logger.info(`[Mock Email] To: ${to}, Subject: ${subject}`);
-    return; // Mock email in dev
-  }
-
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.SMTP_FROM || '"KidLife" <noreply@kidlife.com>',
       to,
       subject,
       html,
     });
-    logger.info(`Email sent to ${to}`);
+    logger.info(`Email sent to ${to} (messageId: ${info.messageId})`);
   } catch (error) {
     logger.error('Error sending email', { error });
     throw new Error('Failed to send email');

@@ -1,4 +1,5 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
+import crypto from 'crypto';
 import { env } from '../../config/env';
 
 export interface TokenPayload {
@@ -16,6 +17,7 @@ export const signAccessToken = (payload: TokenPayload): string => {
 export const signRefreshToken = (payload: TokenPayload): string => {
   const options: SignOptions = {
     expiresIn: parseDuration(env.refreshTokenExpiry) / 1000, // seconds
+    jwtid: crypto.randomUUID(), // Unique per token — prevents same-second collision
   };
   return jwt.sign(payload, env.jwtSecret, options);
 };
