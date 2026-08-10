@@ -75,6 +75,10 @@ export const fetchApi = async <T>(
       return json.data;
     }
 
+<<<<<<< HEAD
+=======
+    // According to contract, successful response should have 'data' (unless 204)
+>>>>>>> 9c100f5821007e1b02b22adb6b13a80ea7ea71a3
     throw new ApiError(
       'Response missing data payload',
       'MALFORMED_RESPONSE',
@@ -82,6 +86,7 @@ export const fetchApi = async <T>(
     );
   } catch (error: unknown) {
     if (error instanceof ApiError) {
+<<<<<<< HEAD
       // Auto-refresh token logic
       if (error.statusCode === 401) {
         const refreshToken = await SecureStore.getItemAsync('refresh_token');
@@ -124,6 +129,8 @@ export const fetchApi = async <T>(
           await SecureStore.deleteItemAsync('refresh_token');
         }
       }
+=======
+>>>>>>> 9c100f5821007e1b02b22adb6b13a80ea7ea71a3
       throw error;
     }
     if (error instanceof Error && error.name === 'AbortError') {
