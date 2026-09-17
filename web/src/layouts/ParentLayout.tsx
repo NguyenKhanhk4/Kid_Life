@@ -1,6 +1,9 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { IoHomeOutline, IoListOutline, IoCheckmarkCircleOutline, IoPeopleOutline, IoPersonOutline, IoCardOutline, IoLogOutOutline } from 'react-icons/io5';
 import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import { useAuth } from '@/modules/auth/AuthContext';
+import ChildPicker from '@/shared/components/ChildPicker';
+import NotificationBell from '@/shared/components/NotificationBell';
 
 const D = MOCK_KIDLIFE_DATA;
 
@@ -19,6 +22,7 @@ const NAV_ITEMS = [
 export default function ParentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   return (
     <div className="web-shell">
@@ -38,9 +42,14 @@ export default function ParentLayout() {
             {D.parent.avatar}
           </div>
           <div>
-            <div className="web-sidebar-user-name">{D.parent.name}</div>
-            <div className="web-sidebar-user-role">Phụ huynh • {D.parent.role}</div>
+            <div className="web-sidebar-user-name">{user?.fullName || D.parent.name}</div>
+            <div className="web-sidebar-user-role">Phụ huynh • {user?.role || D.parent.role}</div>
           </div>
+        </div>
+
+        {/* ChildPicker — chọn nhanh bé đang quản lý */}
+        <div style={{ padding: '0 12px 12px' }}>
+          <ChildPicker />
         </div>
 
         {/* Navigation */}
@@ -82,7 +91,7 @@ export default function ParentLayout() {
           <button
             className="web-nav-item"
             style={{ color: 'var(--kl-red)', marginTop: 4 }}
-            onClick={() => navigate('/login')}
+            onClick={() => { logout(); navigate('/login'); }}
           >
             <span className="nav-item-icon"><IoLogOutOutline size={18} /></span>
             Đăng xuất
@@ -91,7 +100,12 @@ export default function ParentLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="web-main">
+      <main className="web-main" style={{ position: 'relative' }}>
+        {/* Top Header Controls (Global) */}
+        <div style={{ position: 'absolute', top: 24, right: 32, zIndex: 100, display: 'flex', gap: 12 }}>
+          <NotificationBell />
+        </div>
+        
         <Outlet />
       </main>
     </div>
