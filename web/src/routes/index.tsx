@@ -24,6 +24,15 @@ import ChildWishesPage from '@/modules/child/pages/ChildWishesPage';
 import LessonLibraryPage from '@/modules/lesson/pages/LessonLibraryPage';
 import QuizPage from '@/modules/quiz/pages/QuizPage';
 import QuizResultPage from '@/modules/quiz/pages/QuizResultPage';
+import { usePermission } from '@/modules/auth/usePermission';
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAdmin } = usePermission();
+  if (!isAdmin) {
+    return <Navigate to="/parent" replace />;
+  }
+  return <>{children}</>;
+}
 
 export default function AppRouter() {
   return (
@@ -35,7 +44,11 @@ export default function AppRouter() {
         <Route path="/role" element={<RoleSelectionPage />} />
 
         {/* Admin */}
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        } />
 
         {/* Parent */}
         <Route path="/parent" element={<ParentLayout />}>

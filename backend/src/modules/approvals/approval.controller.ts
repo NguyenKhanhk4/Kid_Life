@@ -5,9 +5,9 @@ import { getPendingSubmissions, approveSubmission, getWalletByChildId } from './
 export async function getPendingController(req: Request, res: Response) {
   try {
     const result = await getPendingSubmissions();
-    return successResponse(res, result, "Lấy danh sách bài chờ duyệt thành công");
+    res.status(200).json(successResponse(result, "Lấy danh sách bài chờ duyệt thành công"));
   } catch (error) {
-    return errorResponse(res, (error as Error).message, 500);
+    res.status(500).json(errorResponse((error as Error).message, 500));
   }
 }
 
@@ -17,16 +17,18 @@ export async function approveController(req: Request, res: Response) {
     const { action, feedback = '' } = req.body;
     
     const result = await approveSubmission(submissionId, action, feedback);
-    return successResponse(res, result, "Duyệt bài thành công");
+    res.status(200).json(successResponse(result, "Duyệt bài thành công"));
   } catch (error) {
     const message = (error as Error).message;
     if (message === 'Không tìm thấy bài nộp' || message === 'Không tìm thấy nhiệm vụ liên quan') {
-      return errorResponse(res, message, 404);
+      res.status(404).json(errorResponse(message, 404));
+      return;
     }
     if (message === 'submissionId không hợp lệ' || message === 'Bài nộp này đã được xử lý rồi') {
-      return errorResponse(res, message, 400);
+      res.status(400).json(errorResponse(message, 400));
+      return;
     }
-    return errorResponse(res, message, 500);
+    res.status(500).json(errorResponse(message, 500));
   }
 }
 
@@ -34,12 +36,13 @@ export async function getWalletController(req: Request, res: Response) {
   try {
     const { childId } = req.params;
     const result = await getWalletByChildId(childId);
-    return successResponse(res, result, "Lấy thông tin ví thành công");
+    res.status(200).json(successResponse(result, "Lấy thông tin ví thành công"));
   } catch (error) {
     const message = (error as Error).message;
     if (message === 'childId không hợp lệ') {
-      return errorResponse(res, message, 400);
+      res.status(400).json(errorResponse(message, 400));
+      return;
     }
-    return errorResponse(res, message, 500);
+    res.status(500).json(errorResponse(message, 500));
   }
 }

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { validateRequest } from '../../middleware/validateRequest';
+import validateRequest from '../../middleware/validateRequest';
 import { approveSubmissionSchema } from './approval.validation';
 import { getPendingController, approveController, getWalletController } from './approval.controller';
 

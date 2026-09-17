@@ -70,11 +70,11 @@ export async function approveSubmission(submissionId: string, action: 'approved'
       const new_total_xp = foundWallet.total_xp + mission.reward_xp;
       new_level = calculateLevel(new_total_xp);
 
-      wallet = await Wallet.findByIdAndUpdate(
+      wallet = (await Wallet.findByIdAndUpdate(
         foundWallet._id,
         { total_xp: new_total_xp, current_level: new_level, updated_at: new Date() },
         { new: true }
-      ).lean();
+      ).lean()) as unknown as IWallet | null;
 
       await WalletTransaction.create({
         wallet_id: foundWallet._id,
