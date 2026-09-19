@@ -17,7 +17,7 @@ import ChildLayout from '@/layouts/ChildLayout';
 import ChildHomePage from '@/modules/child/pages/ChildHomePage';
 import ChildTasksPage from '@/modules/child/pages/ChildTasksPage';
 import ChildWalletPage from '@/modules/child/pages/ChildWalletPage';
-import ChildPetPage from '@/modules/child/pages/ChildPetPage';
+import PetPage from '@/features/pet/components/PetPage';
 import ChildAccountPage from '@/modules/child/pages/ChildAccountPage';
 import ChildStoriesPage from '@/modules/child/pages/ChildStoriesPage';
 import ChildWishesPage from '@/modules/child/pages/ChildWishesPage';
@@ -57,7 +57,7 @@ export default function AppRouter() {
           <Route path="home" element={<ChildHomePage />} />
           <Route path="tasks" element={<ChildTasksPage />} />
           <Route path="wallet" element={<ChildWalletPage />} />
-          <Route path="pet" element={<ChildPetPage />} />
+          <Route path="pet" element={<PetPage />} />
           <Route path="account" element={<ChildAccountPage />} />
           <Route path="stories" element={<ChildStoriesPage />} />
           <Route path="wishes" element={<ChildWishesPage />} />

@@ -1,0 +1,217 @@
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+}
+
+.stageWrap {
+  position: relative;
+  width: 180px;
+  transform-origin: 50% 100%;
+  transition: transform 0.9s cubic-bezier(0.34, 1.4, 0.64, 1);
+  will-change: transform;
+}
+
+.avatar {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  animation: kidlifePetIdleBob 2.6s ease-in-out infinite;
+}
+
+.avatar.onTap {
+  animation: kidlifePetTapBounce 0.5s cubic-bezier(0.34, 1.6, 0.64, 1) 1;
+}
+
+.avatar.onFeed {
+  animation: kidlifePetFeedShake 0.9s ease-in-out 1;
+}
+
+.avatar.onEvolve {
+  animation: kidlifePetEvolvePulse 1.1s ease-in-out 1;
+}
+
+.avatarImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 18px rgba(27, 42, 157, 0.18));
+}
+
+@keyframes kidlifePetIdleBob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(-2deg);
+  }
+}
+
+@keyframes kidlifePetTapBounce {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  25% {
+    transform: translateY(4px) scale(1.08, 0.9);
+  }
+  55% {
+    transform: translateY(-26px) scale(0.94, 1.08) rotate(6deg);
+  }
+  80% {
+    transform: translateY(0) scale(1.04, 0.96) rotate(-3deg);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1) rotate(0deg);
+  }
+}
+
+@keyframes kidlifePetFeedShake {
+  0% {
+    transform: scale(1, 1) rotate(0deg);
+  }
+  15% {
+    transform: scale(1.12, 0.88) rotate(-3deg);
+  }
+  30% {
+    transform: scale(0.95, 1.05) rotate(2deg);
+  }
+  45% {
+    transform: scale(1.1, 0.9) rotate(-3deg);
+  }
+  60% {
+    transform: scale(0.96, 1.04) rotate(2deg);
+  }
+  80% {
+    transform: scale(1.05, 0.97) rotate(0deg);
+  }
+  100% {
+    transform: scale(1, 1) rotate(0deg);
+  }
+}
+
+@keyframes kidlifePetEvolvePulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1) saturate(1);
+  }
+  30% {
+    transform: scale(1.35);
+    filter: brightness(1.6) saturate(1.4);
+  }
+  55% {
+    transform: scale(0.9);
+    filter: brightness(1.2);
+  }
+  75% {
+    transform: scale(1.15);
+    filter: brightness(1.4);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1) saturate(1);
+  }
+}
+
+.feedButton {
+  margin-top: 14px;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 26px;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--kl-primary, #2b44e8), var(--kl-primary-dark, #1b2a9d));
+  box-shadow: 0 8px 18px rgba(43, 68, 232, 0.28);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.feedButton:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+.feedButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+.particleLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.heartParticle,
+.crumbParticle,
+.confettiParticle {
+  position: absolute;
+  left: 50%;
+  bottom: 35%;
+  pointer-events: none;
+}
+
+.heartParticle {
+  font-size: 18px;
+  animation: kidlifeHeartFly var(--dur, 900ms) ease-out forwards;
+}
+
+@keyframes kidlifeHeartFly {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 0.2), calc(var(--dy) * 0.3)) scale(1.1) rotate(var(--rot));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.7) rotate(var(--rot));
+  }
+}
+
+.crumbParticle {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  animation: kidlifeCrumbFall var(--dur, 650ms) ease-in forwards;
+}
+
+@keyframes kidlifeCrumbFall {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+  }
+}
+
+.confettiParticle {
+  width: 7px;
+  height: 11px;
+  animation: kidlifeConfettiBurst var(--dur, 1200ms) ease-out forwards;
+}
+
+@keyframes kidlifeConfettiBurst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+  }
+}
