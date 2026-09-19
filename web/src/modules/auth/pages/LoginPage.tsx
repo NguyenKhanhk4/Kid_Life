@@ -1,22 +1,45 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoMailOutline, IoLockClosedOutline, IoEyeOutline, IoEyeOffOutline, IoPersonOutline, IoCallOutline } from 'react-icons/io5';
+import {
+  IoMailOutline, IoLockClosedOutline,
+  IoEyeOutline, IoEyeOffOutline,
+  IoPersonOutline, IoCallOutline,
+} from 'react-icons/io5';
 import { useAuth } from '../AuthContext';
+import '../auth-premium.css';
+import PinEntryModal from '../components/PinEntryModal';
 
 type Mode = 'login' | 'register';
+
+interface ChildOption {
+  _id: string;
+  name: string;
+  emoji: string;
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, register } = useAuth();
 
-  const [mode, setMode] = useState<Mode>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [mode, setMode]           = useState<Mode>('login');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [fullName, setFullName]   = useState('');
+  const [phone, setPhone]         = useState('');
+  const [showPass, setShowPass]   = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+
+  const [selectedChild, setSelectedChild] = useState<ChildOption | null>(null);
+
+  // Premium UI mocked children
+  const childrenList: ChildOption[] = [
+    { _id: '1', name: 'Gấu Nâu', emoji: '🐻' },
+    { _id: '2', name: 'Thỏ Trắng', emoji: '🐰' },
+    { _id: '3', name: 'Mèo Lười', emoji: '🐱' },
+    { _id: '4', name: 'Gấu Trúc', emoji: '🐼' },
+    { _id: '5', name: 'Ếch Xanh', emoji: '🐸' },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,12 +52,10 @@ export default function LoginPage() {
       } else {
         userData = await register({ email, password, fullName, phone: phone || undefined });
       }
-      
-      if (userData.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/role');
-      }
+      setTimeout(() => {
+        if (userData.role === 'admin') navigate('/admin');
+        else navigate('/role');
+      }, 500);
     } catch (err: any) {
       setError(err.message || 'Đã có lỗi xảy ra');
     } finally {
@@ -42,177 +63,203 @@ export default function LoginPage() {
     }
   };
 
+  const handleChildSuccess = () => {
+    setTimeout(() => {
+      navigate('/child/home');
+    }, 2000);
+  };
+
   return (
-    <div className="login-screen">
-      <div className="login-card">
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'var(--kl-primary)', display: 'grid', placeItems: 'center', color: '#fff', fontSize: 20, fontWeight: 900 }}>K</div>
-            <span style={{ fontSize: 26, fontWeight: 900, color: 'var(--kl-primary)' }}>
-              Kid<span style={{ color: 'var(--kl-text)' }}>Life</span>
-            </span>
+    <div className="premium-screen">
+      {/* Nền 3D toàn màn hình */}
+      <div className="premium-bg"></div>
+
+      {/* Cột Trái - Dành cho bé */}
+      <div className="premium-left">
+        <div className="mascot-container">
+          <div className="mascot-glow">
+            <img src="/assets/dragon.jpg" alt="Dragon Mascot" className="mascot-img" />
           </div>
-          <h1 className="login-title">
-            {mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
-          </h1>
-          <p className="login-subtitle">
-            {mode === 'login' ? 'Nhập thông tin tài khoản của bạn' : 'Điền đầy đủ thông tin để bắt đầu'}
-          </p>
+          <div className="glass-bubble">
+            {mode === 'login' ? 'Chào mừng trở lại! 👋' : 'Cùng tham gia nhé! ✨'}
+          </div>
         </div>
 
-        {/* Error banner */}
-        {error && (
-          <div style={{
-            background: '#FEE2E2', border: '1px solid #FECACA', borderRadius: 10,
-            padding: '10px 14px', marginBottom: 16, color: '#DC2626', fontSize: 13, fontWeight: 500
-          }}>
-            ⚠️ {error}
+        <div className="children-section">
+          <h2 className="children-title">👋 Bé nào đang online hôm nay?</h2>
+          <div className="children-list">
+            {childrenList.map((child, index) => {
+              const isActive = selectedChild?._id === child._id;
+              return (
+                <div 
+                  key={child._id} 
+                  className={`glass-card child-card ${isActive ? 'active' : ''}`}
+                  onClick={() => setSelectedChild(child)}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <span className="child-emoji">{child.emoji}</span>
+                  <span className="child-name">{child.name}</span>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
+      </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* fullName — chỉ hiện khi register */}
-          {mode === 'register' && (
-            <div className="kl-input-wrap">
-              <label className="kl-input-label">Họ và tên</label>
-              <div style={{ position: 'relative' }}>
-                <IoPersonOutline size={18} color="#2B44E8" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+      {/* Cột Phải - Form Phụ Huynh */}
+      <div className="premium-right">
+        <div className="glass-panel">
+          <div className="brand-logo">
+            <div className="brand-icon">K</div>
+            <span className="brand-text">KidLife</span>
+          </div>
+
+          <h1 className="form-title">
+            {mode === 'login' ? 'Đăng Nhập Phụ Huynh' : 'Tạo Tài Khoản Mới'}
+          </h1>
+          <p className="form-subtitle">
+            {mode === 'login'
+              ? 'Quản lý lộ trình học tập và thói quen của bé'
+              : 'Bắt đầu hành trình giáo dục tuyệt vời cùng KidLife'}
+          </p>
+
+          {error && (
+            <div className="error-box">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} noValidate className="premium-form">
+            {mode === 'register' && (
+              <div className="input-group">
+                <label>Họ và tên</label>
+                <div className="input-wrapper">
+                  <IoPersonOutline className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder="Nguyễn Văn A"
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="input-group">
+              <label>Email</label>
+              <div className="input-wrapper">
+                <IoMailOutline className="input-icon" />
                 <input
-                  id="auth-fullname"
-                  className="kl-input"
-                  style={{ paddingLeft: 40 }}
-                  type="text"
-                  placeholder="Nguyễn Văn A..."
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                   required
                 />
               </div>
             </div>
-          )}
 
-          {/* Email */}
-          <div className="kl-input-wrap">
-            <label className="kl-input-label">Email</label>
-            <div style={{ position: 'relative' }}>
-              <IoMailOutline size={18} color="#2B44E8" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                id="auth-email"
-                className="kl-input"
-                style={{ paddingLeft: 40 }}
-                type="email"
-                placeholder="example@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-          </div>
+            {mode === 'register' && (
+              <div className="input-group">
+                <label>Số điện thoại <span>(tùy chọn)</span></label>
+                <div className="input-wrapper">
+                  <IoCallOutline className="input-icon" />
+                  <input
+                    type="tel"
+                    placeholder="09xx xxx xxx"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
 
-          {/* Phone — chỉ hiện khi register */}
-          {mode === 'register' && (
-            <div className="kl-input-wrap">
-              <label className="kl-input-label">Số điện thoại <span style={{ color: '#98A3C7', fontWeight: 400 }}>(tuỳ chọn)</span></label>
-              <div style={{ position: 'relative' }}>
-                <IoCallOutline size={18} color="#2B44E8" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+            <div className="input-group">
+              <label>Mật khẩu</label>
+              <div className="input-wrapper">
+                <IoLockClosedOutline className="input-icon" />
                 <input
-                  id="auth-phone"
-                  className="kl-input"
-                  style={{ paddingLeft: 40 }}
-                  type="tel"
-                  placeholder="09xxxxxxxx"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  type={showPass ? 'text' : 'password'}
+                  placeholder="Tối thiểu 6 ký tự"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
                 />
+                <button
+                  type="button"
+                  className="eye-btn"
+                  onClick={() => setShowPass(!showPass)}
+                >
+                  {showPass ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                </button>
               </div>
             </div>
-          )}
 
-          {/* Password */}
-          <div className="kl-input-wrap">
-            <label className="kl-input-label">Mật khẩu</label>
-            <div style={{ position: 'relative' }}>
-              <IoLockClosedOutline size={18} color="#2B44E8" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                id="auth-password"
-                className="kl-input"
-                style={{ paddingLeft: 40, paddingRight: 42 }}
-                type={showPass ? 'text' : 'password'}
-                placeholder="Tối thiểu 6 ký tự..."
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                {showPass
-                  ? <IoEyeOffOutline size={18} color="#98A3C7" />
-                  : <IoEyeOutline size={18} color="#98A3C7" />}
-              </button>
-            </div>
-          </div>
+            {mode === 'login' && (
+              <div className="form-options">
+                <label className="remember-me">
+                  <input type="checkbox" /> Ghi nhớ
+                </label>
+                <a href="#" className="forgot-pass">Quên mật khẩu?</a>
+              </div>
+            )}
+
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading
+                ? 'Đang xử lý...'
+                : mode === 'login'
+                ? 'Đăng Nhập'
+                : 'Đăng Ký'}
+            </button>
+          </form>
 
           {mode === 'login' && (
-            <div className="login-options">
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#98A3C7', cursor: 'pointer' }}>
-                <input type="checkbox" style={{ accentColor: '#2B44E8' }} />
-                Ghi nhớ đăng nhập
-              </label>
-              <span className="login-link">Quên mật khẩu?</span>
-            </div>
-          )}
-
-          <button
-            id="auth-submit-btn"
-            type="submit"
-            className="kl-btn kl-btn-primary kl-btn-block"
-            style={{ marginTop: 20, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
-            disabled={loading}
-          >
-            {loading
-              ? (mode === 'login' ? 'Đang đăng nhập...' : 'Đang tạo tài khoản...')
-              : (mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản')}
-          </button>
-        </form>
-
-        {mode === 'login' && (
-          <>
-            <div className="login-divider"><span>hoặc</span></div>
-            <div className="login-social-row">
-              <button className="login-social">
-                <span style={{ color: '#EA4335', fontSize: 17, fontWeight: 900 }}>G</span>
-                <span style={{ color: '#536088', fontSize: 11, fontWeight: 700 }}>Google</span>
-              </button>
-              <button className="login-social">
-                <span style={{ color: '#1877F2', fontSize: 19, fontWeight: 900 }}>f</span>
-                <span style={{ color: '#536088', fontSize: 11, fontWeight: 700 }}>Facebook</span>
-              </button>
-            </div>
-          </>
-        )}
-
-        <div className="login-register">
-          {mode === 'login' ? (
             <>
-              <span>Bạn chưa có tài khoản?</span>
-              <span className="login-link" style={{ cursor: 'pointer' }} onClick={() => { setMode('register'); setError(''); }}>
-                Đăng ký ngay!
-              </span>
-            </>
-          ) : (
-            <>
-              <span>Đã có tài khoản?</span>
-              <span className="login-link" style={{ cursor: 'pointer' }} onClick={() => { setMode('login'); setError(''); }}>
-                Đăng nhập
-              </span>
+              <div className="divider">
+                <span>Hoặc tiếp tục với</span>
+              </div>
+              <div className="social-login">
+                <button className="btn-social google">
+                  <span className="social-icon google-icon">G</span> Google
+                </button>
+                <button className="btn-social facebook">
+                  <span className="social-icon fb-icon">f</span> Facebook
+                </button>
+              </div>
             </>
           )}
+
+          <div className="auth-switch">
+            {mode === 'login' ? (
+              <p>
+                Chưa có tài khoản?{' '}
+                <span onClick={() => { setMode('register'); setError(''); }}>
+                  Đăng ký ngay
+                </span>
+              </p>
+            ) : (
+              <p>
+                Đã có tài khoản?{' '}
+                <span onClick={() => { setMode('login'); setError(''); }}>
+                  Đăng nhập
+                </span>
+              </p>
+            )}
+          </div>
         </div>
       </div>
+
+      {selectedChild && (
+        <PinEntryModal 
+          childId={selectedChild._id}
+          childName={selectedChild.name}
+          avatarSpecies={selectedChild.emoji}
+          onClose={() => setSelectedChild(null)}
+          onSuccess={handleChildSuccess}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '@/modules/auth/pages/LoginPage';
 import RoleSelectionPage from '@/modules/auth/pages/RoleSelectionPage';
-import AdminDashboard from '@/modules/admin/pages/AdminDashboard';
+import AdminLayout from '@/modules/admin/pages/AdminLayout';
+import AdminOverviewPage from '@/modules/admin/pages/AdminOverviewPage';
+import AdminUsersPage from '@/modules/admin/pages/AdminUsersPage';
+import AdminCommunityPage from '@/modules/admin/pages/AdminCommunityPage';
+import AdminMasterDataPage from '@/modules/admin/pages/AdminMasterDataPage';
+import AdminSubscriptionsPage from '@/modules/admin/pages/AdminSubscriptionsPage';
+import AdminSettingsPage from '@/modules/admin/pages/AdminSettingsPage';
+import AdminLogsPage from '@/modules/admin/pages/AdminLogsPage';
 import ParentLayout from '@/layouts/ParentLayout';
 import ParentHomePage from '@/modules/parent/pages/ParentHomePage';
 import ParentTasksPage from '@/modules/parent/pages/ParentTasksPage';
@@ -25,12 +32,24 @@ import LessonLibraryPage from '@/modules/lesson/pages/LessonLibraryPage';
 import QuizPage from '@/modules/quiz/pages/QuizPage';
 import QuizResultPage from '@/modules/quiz/pages/QuizResultPage';
 import { usePermission } from '@/modules/auth/usePermission';
+import { useAuth } from '@/modules/auth/AuthContext';
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin } = usePermission();
+  const { isLoading, isAuthenticated } = useAuth();
+
+  if (isLoading) {
+    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Đang khôi phục phiên...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   if (!isAdmin) {
     return <Navigate to="/parent" replace />;
   }
+  
   return <>{children}</>;
 }
 
@@ -46,9 +65,18 @@ export default function AppRouter() {
         {/* Admin */}
         <Route path="/admin" element={
           <AdminRoute>
-            <AdminDashboard />
+            <AdminLayout />
           </AdminRoute>
-        } />
+        }>
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<AdminOverviewPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="community" element={<AdminCommunityPage />} />
+          <Route path="master-data" element={<AdminMasterDataPage />} />
+          <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
+          <Route path="logs" element={<AdminLogsPage />} />
+        </Route>
 
         {/* Parent */}
         <Route path="/parent" element={<ParentLayout />}>
