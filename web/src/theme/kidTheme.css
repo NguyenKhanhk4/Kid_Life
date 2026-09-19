@@ -1,0 +1,65 @@
+/* ========================================================================
+   KidLife — Kids "Adventure Garden" Theme Tokens
+   Dùng lại xuyên suốt: LoginPage, RoleSelectionPage, ChildLoginPage,
+   ChildPicker. KHÔNG hard-code màu trong từng component.
+   ======================================================================== */
+
+:root {
+  /* ── Màu chủ đạo Kids ───────────────────────────────────────────────── */
+  --kid-sky:        #8ED8F8;   /* Nền trời xanh pastel */
+  --kid-sky-dark:   #5BB8E8;   /* Trời đậm hơn cho gradient */
+  --kid-grass:      #7ED957;   /* Nền cỏ / footer trang trí */
+  --kid-grass-dark: #52B830;   /* Cỏ đậm hơn (bóng) */
+  --kid-sun:        #FFD93D;   /* Điểm nhấn vàng — nút CTA chính */
+  --kid-sun-dark:   #F5B800;   /* Vàng đậm (bóng nút 3D) */
+  --kid-coral:      #FF6B6B;   /* Điểm nhấn đỏ san hô — lỗi thân thiện */
+  --kid-coral-soft: #FFE5E5;   /* Nền lỗi nhạt */
+  --kid-grape:      #A78BFA;   /* Tím — hover, trạng thái phụ, Parent card */
+  --kid-grape-dark: #7C63D8;   /* Tím đậm hơn (bóng Parent card) */
+  --kid-cream:      #FFF8E7;   /* Nền card / form — không chói như trắng */
+  --kid-cream-dark: #F5E9C8;   /* Cream đậm (border card) */
+  --kid-ink:        #3A3355;   /* Chữ chính — tím than, không đen tuyệt đối */
+  --kid-ink-soft:   #6B6290;   /* Chữ phụ / placeholder */
+  --kid-white:      #FFFFFF;
+  --kid-mint:       #A8F0C6;   /* Nhấn xanh bạc hà — trạng thái thành công */
+
+  /* ── Typography ─────────────────────────────────────────────────────── */
+  --kid-font-heading: 'Baloo 2', 'Nunito', ui-rounded, system-ui, sans-serif;
+  --kid-font-body:    'Nunito', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* ── Cỡ chữ tối thiểu vùng trẻ tương tác ───────────────────────────── */
+  --kid-text-sm:   14px;
+  --kid-text-base: 18px;  /* Tối thiểu vùng trẻ chạm */
+  --kid-text-lg:   22px;
+  --kid-text-xl:   28px;
+  --kid-text-2xl:  36px;
+  --kid-text-3xl:  48px;
+
+  /* ── Spacing ────────────────────────────────────────────────────────── */
+  --kid-space-xs:  8px;
+  --kid-space-sm:  12px;
+  --kid-space-md:  20px;
+  --kid-space-lg:  32px;
+  --kid-space-xl:  48px;
+
+  /* ── Border Radius ──────────────────────────────────────────────────── */
+  --kid-radius-sm:  12px;
+  --kid-radius-md:  20px;
+  --kid-radius-lg:  28px;
+  --kid-radius-xl:  40px;
+  --kid-radius-pill: 999px;
+
+  /* ── Shadow "đồ chơi" (offset rõ, không mờ nhạt) ───────────────────── */
+  --kid-shadow-sm:  0 4px 0 rgba(58, 51, 85, 0.15);
+  --kid-shadow-md:  0 6px 0 rgba(58, 51, 85, 0.18);
+  --kid-shadow-lg:  0 8px 0 rgba(58, 51, 85, 0.20);
+  --kid-shadow-card: 0 8px 32px rgba(58, 51, 85, 0.12);
+
+  /* ── Transition ─────────────────────────────────────────────────────── */
+  --kid-transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* spring-like */
+  --kid-transition-fast: 0.15s ease;
+
+  /* ── Kích thước nút tối thiểu (ngón tay trẻ em) ────────────────────── */
+  --kid-btn-min-h:  56px;
+  --kid-pin-btn-size: 68px;
+}

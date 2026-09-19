@@ -124,7 +124,7 @@ export async function refreshTokenService(incomingToken: string) {
     throw err;
   }
 
-  const user = await User.findById(payload.id).select('+refreshToken status');
+  const user = await User.findById(payload.id).select('+refreshToken');
   if (!user || user.refreshToken !== incomingToken) {
     const err = new Error('refreshToken không khớp');
     (err as any).code = 'INVALID_REFRESH_TOKEN';

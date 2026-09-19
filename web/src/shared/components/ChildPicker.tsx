@@ -1,58 +1,52 @@
-// ChildPicker — component chọn nhanh tài khoản bé, dùng trên ParentLayout header
+// ChildPicker — header dropdown chọn tài khoản bé
 // Export: default ChildPicker
 import { useState, useEffect, useRef } from 'react';
-import { IoChevronDownOutline, IoPersonAddOutline } from 'react-icons/io5';
+import { IoPersonAddOutline, IoChevronDownOutline } from 'react-icons/io5';
 import { useAuth } from '@/modules/auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import '@/modules/auth/auth-kids.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface ChildOption {
-  _id: string;
-  name: string;
-  avatar: string;
-  level: number;
-  xp: number;
+  _id: string; name: string; avatar: string; level: number; xp: number;
 }
 
 interface ChildPickerProps {
-  /** Callback khi chọn bé, truyền childId */
   onSelect?: (child: ChildOption) => void;
 }
 
 export default function ChildPicker({ onSelect }: ChildPickerProps) {
   const { token } = useAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
   const [children, setChildren] = useState<ChildOption[]>([]);
   const [selected, setSelected] = useState<ChildOption | null>(null);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]         = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Fetch children list
+  // Fetch children (GIỮ NGUYÊN LOGIC)
   useEffect(() => {
     if (!token) return;
     fetch(`${API_BASE}/api/children`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.json())
-      .then((json) => {
+      .then(r => r.json())
+      .then(json => {
         if (json.success && json.data?.length > 0) {
           setChildren(json.data);
-          setSelected(json.data[0]); // mặc định chọn bé đầu tiên
+          setSelected(json.data[0]);
         }
       })
       .catch(() => {});
   }, [token]);
 
-  // Close dropdown khi click ngoài
+  // Close on outside click (GIỮ NGUYÊN LOGIC)
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
   }, []);
 
   const handleSelect = (child: ChildOption) => {
@@ -65,91 +59,70 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
     return (
       <button
         id="child-picker-add-btn"
+        className="kpicker-trigger"
         onClick={() => navigate('/parent/account')}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '6px 12px', borderRadius: 20,
-          background: 'var(--kl-primary-soft)', border: 'none',
-          color: 'var(--kl-primary)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-        }}
+        aria-label="Thêm tài khoản bé"
       >
-        <IoPersonAddOutline size={14} /> Thêm bé
+        <IoPersonAddOutline size={16} color="#6031EB" />
+        <span className="kpicker-name">Thêm bé</span>
       </button>
     );
   }
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      {/* Trigger */}
       <button
         id="child-picker-trigger"
+        className="kpicker-trigger"
         onClick={() => setOpen(!open)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '6px 12px', borderRadius: 20,
-          background: 'var(--kl-primary-soft)', border: 'none',
-          cursor: 'pointer', transition: 'background 0.2s',
-        }}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`Đang xem bé: ${selected?.name ?? 'Chọn bé'}`}
       >
-        <span style={{ fontSize: 20 }}>{selected?.avatar ?? '🧒'}</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--kl-primary)' }}>
-          {selected?.name ?? 'Chọn bé'}
-        </span>
+        <span className="kpicker-avatar" aria-hidden="true">{selected?.avatar ?? '🧒'}</span>
+        <span className="kpicker-name">{selected?.name ?? 'Chọn bé'}</span>
         <IoChevronDownOutline
           size={14}
-          color="var(--kl-primary)"
-          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+          className={`kpicker-chevron${open ? ' open' : ''}`}
         />
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div
           id="child-picker-dropdown"
-          style={{
-            position: 'absolute', top: 'calc(100% + 8px)', left: 0,
-            background: '#fff', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid var(--kl-border)', minWidth: 220, zIndex: 500, overflow: 'hidden',
-          }}
+          className="kpicker-dropdown"
+          role="listbox"
+          aria-label="Danh sách tài khoản bé"
         >
-          <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 800, color: 'var(--kl-muted)', letterSpacing: 1 }}>
-            CHỌN TÀI KHOẢN BÉ
-          </div>
-          {children.map((child) => (
+          <div className="kpicker-header">Chọn tài khoản bé</div>
+
+          {children.map(child => (
             <button
               key={child._id}
               id={`child-picker-option-${child._id}`}
+              className={`kpicker-option${selected?._id === child._id ? ' active' : ''}`}
               onClick={() => handleSelect(child)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                padding: '10px 14px', background: selected?._id === child._id ? 'var(--kl-primary-soft)' : 'transparent',
-                border: 'none', cursor: 'pointer', transition: 'background 0.15s',
-              }}
+              role="option"
+              aria-selected={selected?._id === child._id}
             >
-              <span style={{ fontSize: 24 }}>{child.avatar}</span>
-              <div style={{ textAlign: 'left', flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--kl-text)' }}>{child.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--kl-muted)' }}>
-                  Cấp {child.level} • {child.xp.toLocaleString()} XP
-                </div>
-              </div>
+              <span className="kpicker-opt-avatar" aria-hidden="true">{child.avatar}</span>
+              <span>
+                <span className="kpicker-opt-name">{child.name}</span>
+                <span className="kpicker-opt-meta">Cấp {child.level} · {child.xp.toLocaleString('vi-VN')} XP</span>
+              </span>
               {selected?._id === child._id && (
-                <span style={{ fontSize: 16, color: 'var(--kl-primary)' }}>✓</span>
+                <span className="kpicker-opt-check" aria-hidden="true">✓</span>
               )}
             </button>
           ))}
-          <div style={{ borderTop: '1px solid var(--kl-border)', padding: '6px 8px' }}>
-            <button
-              onClick={() => { setOpen(false); navigate('/parent/account'); }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6, width: '100%',
-                padding: '8px 10px', borderRadius: 10, background: 'none',
-                border: 'none', color: 'var(--kl-primary)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              <IoPersonAddOutline size={14} /> Thêm bé mới
-            </button>
-          </div>
+
+          <button
+            className="kpicker-add"
+            onClick={() => { setOpen(false); navigate('/parent/account'); }}
+            aria-label="Thêm tài khoản bé mới"
+          >
+            <IoPersonAddOutline size={15} aria-hidden="true" /> Thêm bé mới
+          </button>
         </div>
       )}
     </div>
