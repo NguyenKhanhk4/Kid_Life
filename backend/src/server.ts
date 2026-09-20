@@ -18,6 +18,12 @@ import notificationRoutes from './modules/notifications/notification.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import supportRoutes from './modules/admin/support.routes';
 
+// DEV 2 Routes
+import penaltyRoutes from './modules/penalties/penalty.routes';
+import virtualBankRoutes from './modules/virtual-bank/virtual-bank.routes';
+import scheduleDailyInterest from './modules/virtual-bank/virtual-bank.cron';
+import { processInterest } from './modules/virtual-bank/virtual-bank.service';
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -44,10 +50,15 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
 
+// DEV 2 Mount
+app.use('/api/penalties', penaltyRoutes);
+app.use('/api/virtual-bank', virtualBankRoutes);
+
 app.use(errorHandler);
 
 async function startServer(): Promise<void> {
   await connectDatabase();
+  scheduleDailyInterest(processInterest);
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });

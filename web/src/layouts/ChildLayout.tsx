@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { IoLogOutOutline } from 'react-icons/io5';
 import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
+import TaskCelebrationToast from '@/shared/components/TaskCelebrationToast';
 
 const D = MOCK_KIDLIFE_DATA;
 
@@ -16,9 +19,32 @@ const NAV_ITEMS = [
 export default function ChildLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [wallet, setWallet] = useState<WalletData>(getWalletData);
+
+  useEffect(() => {
+    const handleWalletUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<WalletData>;
+      if (customEvent.detail) {
+        setWallet(customEvent.detail);
+      } else {
+        setWallet(getWalletData());
+      }
+    };
+
+    window.addEventListener('kidlife_wallet_update', handleWalletUpdate);
+    window.addEventListener('focus', () => setWallet(getWalletData()));
+
+    return () => {
+      window.removeEventListener('kidlife_wallet_update', handleWalletUpdate);
+      window.removeEventListener('focus', () => setWallet(getWalletData()));
+    };
+  }, []);
 
   return (
     <div className="web-shell">
+      {/* Toast chúc mừng tự động khi phụ huynh duyệt bài */}
+      <TaskCelebrationToast />
+
       {/* Sidebar - Kid-friendly theme */}
       <aside className="web-sidebar child-sidebar">
         {/* Brand */}
@@ -46,7 +72,7 @@ export default function ChildLayout() {
           <div>
             <div className="web-sidebar-user-name">Bé {D.child.name}</div>
             <div className="web-sidebar-user-role">
-              ⭐ {D.child.xp.toLocaleString()} XP • Cấp {D.child.level}
+              ⭐ {wallet.balance.toLocaleString()} XP • Cấp {D.child.level}
             </div>
           </div>
         </div>

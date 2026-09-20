@@ -4,6 +4,7 @@ import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
 import { IoLogOutOutline, IoShareSocial } from 'react-icons/io5';
 import ViralMilestoneModal from '@/modules/child/components/ViralMilestoneModal';
 import { useAuth } from '@/modules/auth/AuthContext';
+import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
 
 const D = MOCK_KIDLIFE_DATA;
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -12,6 +13,22 @@ export default function ChildAccountPage() {
   const navigate = useNavigate();
   const { token, logout } = useAuth();
   const [selectedBadge, setSelectedBadge] = useState<any | null>(null);
+  const [wallet, setWallet] = useState<WalletData>(getWalletData);
+
+  useEffect(() => {
+    const handleWalletUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<WalletData>;
+      setWallet(customEvent.detail || getWalletData());
+    };
+
+    window.addEventListener('kidlife_wallet_update', handleWalletUpdate);
+    window.addEventListener('focus', () => setWallet(getWalletData()));
+    window.addEventListener('storage', () => setWallet(getWalletData()));
+
+    return () => {
+      window.removeEventListener('kidlife_wallet_update', handleWalletUpdate);
+    };
+  }, []);
 
   // Fetch child profile — parentId = req.user.id trong token
   // Lấy bé đầu tiên; sau này Dev 3 có thể mở rộng với selectedChildId
@@ -57,7 +74,7 @@ export default function ChildAccountPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 24 }}>
               <div style={{ background: '#fff', padding: 16, borderRadius: 16, border: '1px solid var(--kl-border)' }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-primary)' }}>{childProfile?.xp ?? D.child.xp}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-primary)' }}>{wallet.balance.toLocaleString()}</div>
                 <div style={{ fontSize: 12, color: 'var(--kl-muted)' }}>Tổng XP</div>
               </div>
               <div style={{ background: '#fff', padding: 16, borderRadius: 16, border: '1px solid var(--kl-border)' }}>

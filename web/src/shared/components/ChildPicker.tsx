@@ -1,11 +1,12 @@
-// ChildPicker — header dropdown chọn tài khoản bé
-// Export: default ChildPicker
 import { useState, useEffect, useRef } from 'react';
 import { IoPersonAddOutline, IoChevronDownOutline } from 'react-icons/io5';
 import { useAuth } from '@/modules/auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
 import '@/modules/auth/auth-kids.css';
 
+const D = MOCK_KIDLIFE_DATA;
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface ChildOption {
@@ -24,9 +25,22 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
   const [open, setOpen]         = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Fetch children (GIỮ NGUYÊN LOGIC)
+  const buildDefaultMock = (): ChildOption => ({
+    _id: D.child.id,
+    name: D.child.name,
+    avatar: D.child.avatar,
+    level: D.child.level,
+    xp: getWalletData().balance,
+  });
+
+  // Fetch children (có fallback về bé Minh Anh nếu DB chưa có)
   useEffect(() => {
-    if (!token) return;
+    const defaultMock = buildDefaultMock();
+    if (!token) {
+      setChildren([defaultMock]);
+      setSelected(defaultMock);
+      return;
+    }
     fetch(`${API_BASE}/api/children`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -35,10 +49,41 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
         if (json.success && json.data?.length > 0) {
           setChildren(json.data);
           setSelected(json.data[0]);
+        } else {
+          setChildren([defaultMock]);
+          setSelected(defaultMock);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setChildren([defaultMock]);
+        setSelected(defaultMock);
+      });
   }, [token]);
+
+  // Lắng nghe thay đổi ví điểm realtime để cập nhật XP
+  useEffect(() => {
+    const handleWalletUpdate = (e: Event) => {
+      const custom = e as CustomEvent<WalletData>;
+      const newBalance = custom.detail ? custom.detail.balance : getWalletData().balance;
+      setChildren(prev =>
+        prev.map(c => (c._id === D.child.id || c.name === D.child.name ? { ...c, xp: newBalance } : c))
+      );
+      setSelected(prev => (prev ? { ...prev, xp: newBalance } : null));
+    };
+
+    window.addEventListener('kidlife_wallet_update', handleWalletUpdate);
+    window.addEventListener('storage', () => {
+      const currentXP = getWalletData().balance;
+      setChildren(prev =>
+        prev.map(c => (c._id === D.child.id || c.name === D.child.name ? { ...c, xp: currentXP } : c))
+      );
+      setSelected(prev => (prev ? { ...prev, xp: currentXP } : null));
+    });
+
+    return () => {
+      window.removeEventListener('kidlife_wallet_update', handleWalletUpdate);
+    };
+  }, []);
 
   // Close on outside click (GIỮ NGUYÊN LOGIC)
   useEffect(() => {

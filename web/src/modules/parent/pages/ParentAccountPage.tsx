@@ -4,6 +4,7 @@ import { IoChevronForward, IoPencil, IoLogOutOutline, IoPersonAddOutline, IoClos
 import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
 import { useAuth } from '@/modules/auth/AuthContext';
 import { usePermission } from '@/modules/auth/usePermission';
+import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
 
 const D = MOCK_KIDLIFE_DATA;
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -82,32 +83,88 @@ export default function ParentAccountPage() {
   const [childError, setChildError] = useState('');
   const [childSuccess, setChildSuccess] = useState('');
 
+  const defaultMembers: FamilyMember[] = D.familyMembers.map((m) => ({
+    _id: m.id,
+    phone: m.phone,
+    role: m.role as 'admin' | 'parent' | 'grandparent',
+    status: m.status as 'active' | 'pending',
+    userId: { fullName: m.name, email: '' },
+  }));
+
+  const defaultChild: Child = {
+    _id: D.child.id,
+    name: D.child.name,
+    age: D.child.age,
+    avatar: D.child.avatar,
+    level: D.child.level,
+    xp: getWalletData().balance,
+    streak: D.child.streak,
+  };
+
+  // Lắng nghe thay đổi số dư ví realtime
+  useEffect(() => {
+    const handleWalletUpdate = (e: Event) => {
+      const custom = e as CustomEvent<WalletData>;
+      const newBal = custom.detail ? custom.detail.balance : getWalletData().balance;
+      setChildren((prev) =>
+        prev.map((c) => (c._id === D.child.id || c.name === D.child.name ? { ...c, xp: newBal } : c))
+      );
+    };
+
+    window.addEventListener('kidlife_wallet_update', handleWalletUpdate);
+    window.addEventListener('storage', () => {
+      const newBal = getWalletData().balance;
+      setChildren((prev) =>
+        prev.map((c) => (c._id === D.child.id || c.name === D.child.name ? { ...c, xp: newBal } : c))
+      );
+    });
+
+    return () => {
+      window.removeEventListener('kidlife_wallet_update', handleWalletUpdate);
+    };
+  }, []);
+
   // ── Fetch members ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setMembers(defaultMembers);
+      return;
+    }
     setLoadingMembers(true);
     fetch(`${API_BASE}/api/family/members`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((json) => {
-        if (json.success) setMembers(json.data ?? []);
-        else setMembersError(json.error?.message || 'Không tải được danh sách thành viên');
+        if (json.success && json.data && json.data.length > 0) {
+          setMembers(json.data);
+        } else {
+          setMembers(defaultMembers);
+        }
       })
-      .catch(() => setMembersError('Lỗi kết nối máy chủ'))
+      .catch(() => setMembers(defaultMembers))
       .finally(() => setLoadingMembers(false));
   }, [token]);
 
   // ── Fetch children ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setChildren([defaultChild]);
+      return;
+    }
     setLoadingChildren(true);
     fetch(`${API_BASE}/api/children`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
-      .then((json) => { if (json.success) setChildren(json.data ?? []); })
-      .catch(() => {})
+      .then((json) => {
+        if (json.success && json.data && json.data.length > 0) {
+          setChildren(json.data);
+        } else {
+          setChildren([defaultChild]);
+        }
+      })
+      .catch(() => setChildren([defaultChild]))
       .finally(() => setLoadingChildren(false));
   }, [token]);
 
