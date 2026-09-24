@@ -11,13 +11,10 @@ import {
   IoVideocamOutline,
   IoSchoolOutline,
 } from 'react-icons/io5';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
 import { useAuth } from '@/modules/auth/AuthContext';
 import ChildPicker from '@/shared/components/ChildPicker';
 import NotificationBell from '@/shared/components/NotificationBell';
 import { getPendingApprovalsCount } from '@/shared/utils/taskStorage';
-
-const D = MOCK_KIDLIFE_DATA;
 
 const NAV_ITEMS = [
   { path: '/parent/home', label: 'Trang chủ', icon: IoHomeOutline, emoji: '🏠' },
@@ -72,11 +69,11 @@ export default function ParentLayout() {
         {/* User Info */}
         <div className="web-sidebar-user">
           <div className="web-sidebar-avatar">
-            {D.parent.avatar}
+            👨‍👩‍👧
           </div>
           <div>
-            <div className="web-sidebar-user-name">{user?.fullName || D.parent.name}</div>
-            <div className="web-sidebar-user-role">Phụ huynh • {user?.role || D.parent.role}</div>
+            <div className="web-sidebar-user-name">{user?.fullName || 'Phụ huynh'}</div>
+            <div className="web-sidebar-user-role">Phụ huynh • {user?.email || ''}</div>
           </div>
         </div>
 
@@ -115,12 +112,7 @@ export default function ParentLayout() {
           >
             ⇄ Chuyển sang chế độ Trẻ em
           </button>
-          <button
-            className="web-sidebar-mode-btn"
-            onClick={() => navigate('/admin')}
-          >
-            🛠️ Admin Dashboard
-          </button>
+
           <button
             className="web-nav-item"
             style={{ color: 'var(--kl-red)', marginTop: 4 }}

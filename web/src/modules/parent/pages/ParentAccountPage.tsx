@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoChevronForward, IoPencil, IoLogOutOutline, IoPersonAddOutline, IoCloseOutline, IoPeopleOutline, IoPersonOutline } from 'react-icons/io5';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import { IoChevronForward, IoPencil, IoLogOutOutline, IoPersonAddOutline, IoCloseOutline, IoPeopleOutline, IoPersonOutline, IoEyeOutline, IoEyeOffOutline, IoTrashOutline } from 'react-icons/io5';
 import { useAuth } from '@/modules/auth/AuthContext';
 import { usePermission } from '@/modules/auth/usePermission';
 import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
 
-const D = MOCK_KIDLIFE_DATA;
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const AVATAR_OPTIONS = ['🧒', '👦', '👧', '🧒🏻', '👦🏻', '👧🏻', '🧒🏽', '🦸', '🧙', '🐱'];
+const AVATAR_OPTIONS = Array.from({ length: 10 }, (_, i) => `/assets/pet_avatars/pet${i + 1}.jpg?v=3`);
 
 const menuItems = [
   { icon: '💳', label: 'Gói KidLife Premium', detail: 'Đang hoạt động', isPremium: true },
@@ -77,29 +75,15 @@ export default function ParentAccountPage() {
   const [showChildModal, setShowChildModal] = useState(false);
   const [childName, setChildName] = useState('');
   const [childAge, setChildAge] = useState('');
-  const [childAvatar, setChildAvatar] = useState('🧒');
+  const [childAvatar, setChildAvatar] = useState('');
   const [childPin, setChildPin] = useState('');
   const [childLoading, setChildLoading] = useState(false);
   const [childError, setChildError] = useState('');
   const [childSuccess, setChildSuccess] = useState('');
-
-  const defaultMembers: FamilyMember[] = D.familyMembers.map((m) => ({
-    _id: m.id,
-    phone: m.phone,
-    role: m.role as 'admin' | 'parent' | 'grandparent',
-    status: m.status as 'active' | 'pending',
-    userId: { fullName: m.name, email: '' },
-  }));
-
-  const defaultChild: Child = {
-    _id: D.child.id,
-    name: D.child.name,
-    age: D.child.age,
-    avatar: D.child.avatar,
-    level: D.child.level,
-    xp: getWalletData().balance,
-    streak: D.child.streak,
-  };
+  const [showPin, setShowPin] = useState(false);
+  const [hoveredChildId, setHoveredChildId] = useState<string | null>(null);
+  const [deletingChildId, setDeletingChildId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Lắng nghe thay đổi số dư ví realtime
   useEffect(() => {
@@ -107,16 +91,14 @@ export default function ParentAccountPage() {
       const custom = e as CustomEvent<WalletData>;
       const newBal = custom.detail ? custom.detail.balance : getWalletData().balance;
       setChildren((prev) =>
-        prev.map((c) => (c._id === D.child.id || c.name === D.child.name ? { ...c, xp: newBal } : c))
+        prev.map((c) => ({ ...c, xp: newBal }))
       );
     };
 
     window.addEventListener('kidlife_wallet_update', handleWalletUpdate);
     window.addEventListener('storage', () => {
       const newBal = getWalletData().balance;
-      setChildren((prev) =>
-        prev.map((c) => (c._id === D.child.id || c.name === D.child.name ? { ...c, xp: newBal } : c))
-      );
+      setChildren((prev) => prev.map((c) => ({ ...c, xp: newBal })));
     });
 
     return () => {
@@ -126,51 +108,43 @@ export default function ParentAccountPage() {
 
   // ── Fetch members ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!token) {
-      setMembers(defaultMembers);
-      return;
-    }
+    if (!token) return;
     setLoadingMembers(true);
     fetch(`${API_BASE}/api/family/members`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((json) => {
-        if (json.success && json.data && json.data.length > 0) {
-          setMembers(json.data);
-        } else {
-          setMembers(defaultMembers);
-        }
+        setMembers(json.success && json.data ? json.data : []);
       })
-      .catch(() => setMembers(defaultMembers))
+      .catch(() => setMembersError('Không thể tải danh sách thành viên'))
       .finally(() => setLoadingMembers(false));
   }, [token]);
 
   // ── Fetch children ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!token) {
-      setChildren([defaultChild]);
-      return;
-    }
+    if (!token) return;
     setLoadingChildren(true);
     fetch(`${API_BASE}/api/children`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((json) => {
-        if (json.success && json.data && json.data.length > 0) {
-          setChildren(json.data);
-        } else {
-          setChildren([defaultChild]);
-        }
+        const data = json.success && json.data ? json.data : [];
+        setChildren(data);
+        localStorage.setItem('kl_device_children', JSON.stringify(data));
       })
-      .catch(() => setChildren([defaultChild]))
+      .catch(() => {})
       .finally(() => setLoadingChildren(false));
   }, [token]);
 
   // ── Handle add child ───────────────────────────────────────────────────────────
   const handleAddChild = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!childAvatar) {
+      setChildError('Vui lòng chọn 1 thú cưng làm ảnh đại diện cho bé!');
+      return;
+    }
     setChildError(''); setChildSuccess('');
     setChildLoading(true);
     try {
@@ -181,14 +155,41 @@ export default function ParentAccountPage() {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error?.message || 'Tạo hồ sơ bé thất bại');
-      setChildren((prev) => [...prev, json.data]);
+      setChildren((prev) => {
+        const next = [...prev, json.data];
+        localStorage.setItem('kl_device_children', JSON.stringify(next));
+        return next;
+      });
       setChildSuccess(`Đã tạo hồ sơ cho bé ${childName}!`);
-      setChildName(''); setChildAge(''); setChildPin(''); setChildAvatar('🧒');
+      setChildName(''); setChildAge(''); setChildPin(''); setChildAvatar('');
       setTimeout(() => { setShowChildModal(false); setChildSuccess(''); }, 1800);
     } catch (err: any) {
       setChildError(err.message);
     } finally {
       setChildLoading(false);
+    }
+  };
+
+  const executeDeleteChild = async (childId: string) => {
+    setDeletingChildId(childId);
+    try {
+      const res = await fetch(`${API_BASE}/api/children/${childId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error?.message || 'Xóa hồ sơ thất bại');
+      
+      setChildren((prev) => {
+        const next = prev.filter(c => c._id !== childId);
+        localStorage.setItem('kl_device_children', JSON.stringify(next));
+        return next;
+      });
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setDeletingChildId(null);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -273,12 +274,12 @@ export default function ParentAccountPage() {
           {/* Profile card */}
           <div className="kl-card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 20 }}>
             <div style={{ width: 80, height: 80, borderRadius: 24, background: 'var(--kl-primary-soft)', display: 'grid', placeItems: 'center', fontSize: 42 }}>
-              {D.parent.avatar}
+              👨‍👩‍👧
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, fontSize: 18 }}>{user?.fullName || D.parent.name}</div>
+              <div style={{ fontWeight: 800, fontSize: 18 }}>{user?.fullName || 'Đang tải...'}</div>
               <div style={{ color: 'var(--kl-muted)', fontSize: 12, marginTop: 4 }}>
-                {user?.email || D.parent.email} • Quyền {user?.role || D.parent.role}
+                {user?.email || ''} • Quyền {user?.role || ''}
               </div>
               <button className="kl-badge" style={{ background: 'var(--kl-primary-soft)', color: 'var(--kl-primary)', marginTop: 10 }}>
                 <IoPencil size={11} /> Chỉnh sửa thông tin
@@ -378,9 +379,15 @@ export default function ParentAccountPage() {
             ) : (
               <div style={{ display: 'grid', gap: 10 }}>
                 {children.map((child) => (
-                  <div key={child._id} className="kl-card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, cursor: 'pointer', border: '1px solid var(--kl-border)' }}>
-                    <div style={{ width: 48, height: 48, borderRadius: 16, background: 'var(--kl-orange-soft)', display: 'grid', placeItems: 'center', fontSize: 26 }}>
-                      {child.avatar}
+                  <div 
+                    key={child._id} 
+                    className="kl-card" 
+                    onMouseEnter={() => setHoveredChildId(child._id)}
+                    onMouseLeave={() => setHoveredChildId(null)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, cursor: 'pointer', border: '1px solid var(--kl-border)', position: 'relative' }}
+                  >
+                    <div style={{ width: 48, height: 48, borderRadius: 16, background: '#fff', display: 'grid', placeItems: 'center', fontSize: 26, overflow: 'hidden', border: '1px solid #E5E7EB' }}>
+                      {child.avatar?.startsWith('/') ? <img src={child.avatar} alt="avatar" style={{ width: '80%', height: '80%', objectFit: 'contain' }} /> : child.avatar}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 800, fontSize: 14 }}>Bé {child.name}</div>
@@ -388,7 +395,19 @@ export default function ParentAccountPage() {
                         {child.age ? `${child.age} tuổi  •  ` : ''}Cấp {child.level}  •  {child.xp.toLocaleString()} XP
                       </div>
                     </div>
-                    <IoChevronForward size={18} color="var(--kl-primary)" />
+                    
+                    {hoveredChildId === child._id ? (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(child._id); }}
+                        disabled={deletingChildId === child._id}
+                        style={{ background: '#FEE2E2', color: '#DC2626', border: 'none', borderRadius: 10, padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2 }}
+                        title="Xóa hồ sơ bé"
+                      >
+                        {deletingChildId === child._id ? <span style={{ fontSize: 12 }}>...</span> : <IoTrashOutline size={18} />}
+                      </button>
+                    ) : (
+                      <IoChevronForward size={18} color="var(--kl-primary)" />
+                    )}
                   </div>
                 ))}
               </div>
@@ -542,12 +561,19 @@ export default function ParentAccountPage() {
             <form onSubmit={handleAddChild}>
               {/* Avatar picker */}
               <div className="kl-input-wrap">
-                <label className="kl-input-label">Chọn avatar</label>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <label className="kl-input-label">Chọn thú cưng cho cục cưng</label>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', padding: '10px 0' }}>
                   {AVATAR_OPTIONS.map((av) => (
                     <button key={av} type="button" onClick={() => setChildAvatar(av)}
-                      style={{ fontSize: 24, width: 44, height: 44, borderRadius: 12, border: childAvatar === av ? '2px solid var(--kl-primary)' : '2px solid transparent', background: childAvatar === av ? 'var(--kl-primary-soft)' : '#f5f5f5', cursor: 'pointer' }}>
-                      {av}
+                      style={{
+                        width: 60, height: 60, borderRadius: 18,
+                        border: childAvatar === av ? '2px solid var(--kl-primary)' : '1px solid #E5E7EB',
+                        background: '#fff',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.2s', boxShadow: childAvatar === av ? '0 4px 12px rgba(96,49,235,0.2)' : 'none',
+                        transform: childAvatar === av ? 'scale(1.05)' : 'scale(1)'
+                      }}>
+                      <img src={av} alt="pet avatar" style={{ width: '75%', height: '75%', objectFit: 'contain' }} />
                     </button>
                   ))}
                 </div>
@@ -565,13 +591,54 @@ export default function ParentAccountPage() {
 
               <div className="kl-input-wrap">
                 <label className="kl-input-label">Mã PIN (4 chữ số)</label>
-                <input id="child-pin-input" className="kl-input" type="password" inputMode="numeric" maxLength={4} placeholder="****" value={childPin} onChange={(e) => setChildPin(e.target.value.replace(/\D/g, '').slice(0, 4))} required />
+                <div style={{ position: 'relative' }}>
+                  <input id="child-pin-input" className="kl-input" type={showPin ? "text" : "password"} inputMode="numeric" maxLength={4} placeholder="****" value={childPin} onChange={(e) => setChildPin(e.target.value.replace(/\D/g, '').slice(0, 4))} required style={{ paddingRight: 44 }} />
+                  <button type="button" onClick={() => setShowPin(!showPin)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--kl-muted)', padding: 0 }}>
+                    {showPin ? <IoEyeOffOutline size={20} /> : <IoEyeOutline size={20} />}
+                  </button>
+                </div>
               </div>
 
               <button id="child-submit-btn" type="submit" className="kl-btn kl-btn-primary kl-btn-block" style={{ marginTop: 8, opacity: childLoading ? 0.7 : 1 }} disabled={childLoading}>
                 {childLoading ? 'Đang tạo...' : 'Tạo hồ sơ bé'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal xác nhận xóa bé */}
+      {confirmDeleteId && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(4px)'
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmDeleteId(null); }}
+        >
+          <div className="kl-card" style={{ width: '90%', maxWidth: 360, padding: 24, textAlign: 'center' }}>
+            <div style={{ width: 60, height: 60, borderRadius: 30, background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 28 }}>
+              <IoTrashOutline />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>Xóa hồ sơ bé?</h3>
+            <p style={{ color: 'var(--kl-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>
+              Bạn có chắc chắn muốn xóa hồ sơ này? Toàn bộ tiến trình, phần thưởng và nhật ký của bé sẽ bị mất vĩnh viễn.
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={() => setConfirmDeleteId(null)}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--kl-bg-soft)', color: 'var(--kl-text)', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                disabled={deletingChildId !== null}
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={() => executeDeleteChild(confirmDeleteId)}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--kl-red)', color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer', opacity: deletingChildId ? 0.7 : 1 }}
+                disabled={deletingChildId !== null}
+              >
+                {deletingChildId ? 'Đang xóa...' : 'Vâng, Xóa!'}
+              </button>
+            </div>
           </div>
         </div>
       )}

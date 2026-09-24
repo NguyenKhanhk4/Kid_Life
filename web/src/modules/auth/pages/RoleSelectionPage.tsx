@@ -4,13 +4,17 @@ import { useAuth } from '../AuthContext';
 import '../auth-kids.css';
 
 export default function RoleSelectionPage() {
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const childRef  = useRef<HTMLButtonElement>(null);
+  const childRef = useRef<HTMLButtonElement>(null);
 
   // ── Logic giữ nguyên ─────────────────────────────────────────────────
   useEffect(() => {
-    if (user?.role === 'admin') navigate('/admin', { replace: true });
+    if (!user) {
+      navigate('/login', { replace: true });
+    } else if (user.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
   }, [user, navigate]);
 
   const handleSelectRole = (role: 'parent' | 'child') => {
@@ -24,10 +28,17 @@ export default function RoleSelectionPage() {
 
   return (
     <div className="rs-screen">
-      {/* ── Mây trang trí ──────────────────────────────────────────────── */}
-      <div className="rs-cloud-1" aria-hidden="true" />
-      <div className="rs-cloud-2" aria-hidden="true" />
-      <div className="rs-cloud-3" aria-hidden="true" />
+      {/* ── Mây & Đom đóm trang trí ────────────────────────────────────── */}
+      <div className="rs-fireflies">
+        {[...Array(40)].map((_, i) => (
+          <div key={i} className="rs-firefly" style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 5}s`,
+            animationDuration: `${5 + Math.random() * 5}s`
+          }} />
+        ))}
+      </div>
 
       {/* ── Nội dung ───────────────────────────────────────────────────── */}
       {user && (
@@ -69,7 +80,7 @@ export default function RoleSelectionPage() {
             <span className="rs-star">🌟</span>
           </div>
           <span className="rs-card-emoji" aria-hidden="true">🐣</span>
-          <span className="rs-card-title">Tôi là bé!</span>
+          <span className="rs-card-title">Em bé ngoan!</span>
           <span className="rs-card-sub">Vào học, chăm pet và nhận thưởng mỗi ngày 🎁</span>
         </button>
       </div>
@@ -88,43 +99,6 @@ export default function RoleSelectionPage() {
         Đăng xuất
       </button>
 
-      {/* ── Cỏ footer + Động vật ────────────────────────────────────────── */}
-      <div className="rs-grass" aria-hidden="true">
-        <div className="rs-critters">
-          <div className="rs-critter" data-anim="hop">
-            <span className="rs-critter-emoji">🐰</span>
-            <span className="rs-critter-label">Thỏ Trắng</span>
-          </div>
-          <div className="rs-critter" data-anim="nod">
-            <span className="rs-critter-emoji">🦆</span>
-            <span className="rs-critter-label">Vịt Bầu</span>
-          </div>
-          <div className="rs-critter" data-anim="sway">
-            <span className="rs-critter-emoji">🐻</span>
-            <span className="rs-critter-label">Gấu Nâu</span>
-          </div>
-          <div className="rs-critter" data-anim="wave">
-            <span className="rs-critter-emoji">🐱</span>
-            <span className="rs-critter-label">Mèo Nhỏ</span>
-          </div>
-          <div className="rs-critter" data-anim="fly">
-            <span className="rs-critter-emoji">🦉</span>
-            <span className="rs-critter-label">Cú Mèo</span>
-          </div>
-          <div className="rs-critter" data-anim="poke">
-            <span className="rs-critter-emoji">🦔</span>
-            <span className="rs-critter-label">Nhím Nhỏ</span>
-          </div>
-          <div className="rs-critter" data-anim="leap">
-            <span className="rs-critter-emoji">🐸</span>
-            <span className="rs-critter-label">Ếch Xanh</span>
-          </div>
-          <div className="rs-critter" data-anim="spin">
-            <span className="rs-critter-emoji">🐼</span>
-            <span className="rs-critter-label">Gấu Trúc</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

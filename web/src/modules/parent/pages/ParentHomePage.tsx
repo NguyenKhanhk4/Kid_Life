@@ -1,34 +1,68 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  IoStarSharp,
-  IoFlameSharp,
-  IoMedalSharp,
-  IoMapOutline,
-  IoArrowForward,
-  IoGift,
-  IoCard,
-  IoCheckmarkCircle,
-  IoTimeOutline,
-} from 'react-icons/io5';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
-import { getTasks, TaskItem } from '@/shared/utils/taskStorage';
+import { IoStarSharp, IoFlameSharp, IoMedalSharp, IoMapOutline, IoArrowForward, IoGift, IoCard, IoCheckmarkCircle, IoTimeOutline } from 'react-icons/io5';
 import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
+import { useAuth } from '@/modules/auth/AuthContext';
+import { usePermission } from '@/modules/auth/usePermission';
 
-const D = MOCK_KIDLIFE_DATA;
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const DEFAULT_BADGES = [
+  { id: '1', name: 'Ngôi sao tự lập', icon: '🌟', locked: false, bgColor: '#FFF4CD' },
+  { id: '2', name: 'Chiến thần gọn gàng', icon: '🧹', locked: false, bgColor: '#E8F5E9' },
+  { id: '3', name: 'Chuyên gia tiết kiệm', icon: '🐷', locked: true, bgColor: '#FCE4EC' },
+  { id: '4', name: 'Hiệp sĩ dũng cảm', icon: '🛡️', locked: true, bgColor: '#E3F2FD' },
+];
 
 export default function ParentHomePage() {
   const navigate = useNavigate();
-  const [selectedChild, setSelectedChild] = useState(D.children[0]);
+  const { token } = useAuth();
+  const { canApproveMission, canManageWallet } = usePermission();
+  
+  const [childrenList, setChildrenList] = useState<any[]>([]);
+  const [selectedChild, setSelectedChild] = useState<any>(null);
   const [showChildPicker, setShowChildPicker] = useState(false);
 
-  const [tasks, setTasks] = useState<TaskItem[]>(getTasks);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [wallet, setWallet] = useState<WalletData>(getWalletData);
 
   useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/api/children`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && json.data) {
+          setChildrenList(json.data);
+          localStorage.setItem('kl_device_children', JSON.stringify(json.data));
+          if (json.data.length > 0) {
+            setSelectedChild(json.data[0]);
+          }
+        }
+      })
+      .catch(err => console.error('Lỗi tải danh sách bé:', err));
+  }, [token]);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/missions`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          setTasks(json.data);
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải nhiệm vụ:', err);
+      }
+    };
+
+    fetchTasks();
+    const pollInterval = setInterval(fetchTasks, 5000); // Polling mỗi 5s
+
     const handleTasksSync = (e: Event) => {
-      const custom = e as CustomEvent<TaskItem[]>;
-      setTasks(custom.detail || getTasks());
+      fetchTasks(); // Cập nhật ngay nếu có event cục bộ
     };
 
     const handleWalletSync = (e: Event) => {
@@ -39,15 +73,16 @@ export default function ParentHomePage() {
     window.addEventListener('kidlife_tasks_update', handleTasksSync);
     window.addEventListener('kidlife_wallet_update', handleWalletSync);
     window.addEventListener('focus', () => {
-      setTasks(getTasks());
+      fetchTasks();
       setWallet(getWalletData());
     });
     window.addEventListener('storage', () => {
-      setTasks(getTasks());
+      fetchTasks();
       setWallet(getWalletData());
     });
 
     return () => {
+      clearInterval(pollInterval);
       window.removeEventListener('kidlife_tasks_update', handleTasksSync);
       window.removeEventListener('kidlife_wallet_update', handleWalletSync);
     };
@@ -64,7 +99,7 @@ export default function ParentHomePage() {
         <div>
           <p style={{ fontSize: 13, color: 'var(--kl-muted)', marginBottom: 4 }}>Xin chào phụ huynh! 👋</p>
           <h1>
-            Dashboard — Bé {selectedChild.name}
+            Dashboard — Bé {selectedChild?.name || '...'}
             <button
               onClick={() => setShowChildPicker(!showChildPicker)}
               style={{
@@ -88,16 +123,15 @@ export default function ParentHomePage() {
           </span>
         </div>
       </div>
-
       {/* Child Picker */}
       {showChildPicker && (
         <div className="kl-card" style={{ marginBottom: 20, maxWidth: 400, animation: 'slideUp 0.2s ease' }}>
           <p style={{ fontSize: 14, color: 'var(--kl-primary-dark)', marginBottom: 12, fontWeight: 700 }}>
             Chọn tài khoản con khác
           </p>
-          {D.children.map((child) => (
+          {childrenList.map((child) => (
             <button
-              key={child.id}
+              key={child._id || child.id}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -121,17 +155,39 @@ export default function ParentHomePage() {
                   width: 36,
                   height: 36,
                   borderRadius: 18,
-                  background: '#E8EDFC',
+                  background: '#fff',
+                  border: '1px solid #E5E7EB',
                   display: 'grid',
                   placeItems: 'center',
                   fontSize: 18,
+                  overflow: 'hidden',
                 }}
               >
-                {child.avatar}
+                {child.avatar?.startsWith('/') ? <img src={child.avatar} alt="avatar" style={{ width: '80%', height: '80%', objectFit: 'contain' }} /> : child.avatar}
               </div>
               <span style={{ fontWeight: 700, color: 'var(--kl-primary-dark)' }}>{child.name}</span>
             </button>
           ))}
+          
+          <button
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '10px 0',
+              width: '100%',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              marginTop: 4,
+            }}
+            onClick={() => navigate('/parent/account')}
+          >
+            <div style={{ width: 36, height: 36, borderRadius: 18, background: 'rgba(96,49,235,0.1)', display: 'grid', placeItems: 'center', color: 'var(--kl-primary)' }}>
+              ➕
+            </div>
+            <span style={{ fontWeight: 700, color: 'var(--kl-primary)' }}>Thêm bé mới</span>
+          </button>
         </div>
       )}
 
@@ -145,14 +201,14 @@ export default function ParentHomePage() {
               <span style={{ fontWeight: 'bold', fontSize: 14 }}> {wallet.balance.toLocaleString()} XP</span>
             </div>
             <span style={{ fontSize: 12, opacity: 0.8 }}>
-              Cấp {D.child.level} → Cấp {D.child.level + 1}: {D.child.xpToNextLevel.toLocaleString()} XP
+              Cấp {selectedChild?.level || 1} → Cấp {(selectedChild?.level || 1) + 1}: {((selectedChild?.level || 1) * 1000).toLocaleString()} XP
             </span>
           </div>
           <div className="progress-bar">
             <div
               className="progress-fill"
               style={{
-                width: `${Math.min(100, (wallet.balance / D.child.xpToNextLevel) * 100)}%`,
+                width: `${Math.min(100, (wallet.balance / ((selectedChild?.level || 1) * 1000)) * 100)}%`,
               }}
             />
           </div>
@@ -212,49 +268,32 @@ export default function ParentHomePage() {
           </button>
           <button
             className="quick-action-btn"
-            style={{
-              background: 'rgba(43,68,232,0.08)',
-              color: '#2B44E8',
-              flexDirection: 'row',
-              justifyContent: 'flex-start',
-              gap: 12,
-              padding: 10,
-            }}
+            style={{ background: 'rgba(43,68,232,0.08)', color: '#2B44E8', flexDirection: 'row', justifyContent: 'flex-start', gap: 12, padding: 10 }}
             onClick={() => navigate('/parent/memory-lane')}
           >
             <span style={{ fontSize: 18 }}>📷</span>
             <span>Nhật ký Memory Lane</span>
           </button>
-          <button
-            className="quick-action-btn"
-            style={{
-              background: 'rgba(255,169,0,0.08)',
-              color: '#FFA900',
-              flexDirection: 'row',
-              justifyContent: 'flex-start',
-              gap: 12,
-              padding: 10,
-            }}
-            onClick={() => navigate('/parent/approval')}
-          >
-            <IoGift size={18} />
-            <span>Duyệt thưởng & Điều ước</span>
-          </button>
-          <button
-            className="quick-action-btn"
-            style={{
-              background: 'rgba(0,196,140,0.08)',
-              color: '#00C48C',
-              flexDirection: 'row',
-              justifyContent: 'flex-start',
-              gap: 12,
-              padding: 10,
-            }}
-            onClick={() => navigate('/parent/bank')}
-          >
-            <IoCard size={18} />
-            <span>Ngân hàng ảo & Heo đất</span>
-          </button>
+          {canApproveMission && (
+            <button
+              className="quick-action-btn"
+              style={{ background: 'rgba(255,169,0,0.08)', color: '#FFA900', flexDirection: 'row', justifyContent: 'flex-start', gap: 12, padding: 10 }}
+              onClick={() => navigate('/parent/approval')}
+            >
+              <IoGift size={18} />
+              <span>Duyệt thưởng & Điều ước</span>
+            </button>
+          )}
+          {canManageWallet && (
+            <button
+              className="quick-action-btn"
+              style={{ background: 'rgba(0,196,140,0.08)', color: '#00C48C', flexDirection: 'row', justifyContent: 'flex-start', gap: 12, padding: 10 }}
+              onClick={() => navigate('/parent/bank')}
+            >
+              <IoCard size={18} />
+              <span>Ngân hàng ảo & Heo đất</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -290,7 +329,7 @@ export default function ParentHomePage() {
               const isSubmitted = task.status === 'submitted';
               return (
                 <div
-                  key={task.id}
+                  key={task._id || task.id}
                   onClick={() => navigate('/parent/tasks')}
                   className="task-item"
                   style={{
@@ -395,7 +434,7 @@ export default function ParentHomePage() {
         </div>
       </div>
       <div className="badges-grid" style={{ marginBottom: 24 }}>
-        {D.badges.map((badge) => (
+        {DEFAULT_BADGES.map((badge) => (
           <div className="badge-item" key={badge.id}>
             <div className="badge-icon-box" style={{ background: badge.bgColor }}>
               <span style={{ fontSize: 28, opacity: badge.locked ? 0.4 : 1 }}>{badge.icon}</span>

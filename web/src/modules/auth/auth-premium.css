@@ -1,6 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 /* Reset & Base */
+.premium-screen,
+.premium-screen * {
+  box-sizing: border-box;
+}
+
 .premium-screen {
   position: relative;
   width: 100vw;
@@ -15,11 +20,28 @@
 /* Background Image */
 .premium-bg {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-image: url('/assets/bg-forest.jpg');
   background-size: cover;
   background-position: center;
-  filter: brightness(0.9) contrast(1.1);
+  background-position: center;
+  filter: brightness(0.35) contrast(1.15);
+  z-index: 0;
+}
+
+.premium-bg-child {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('/assets/bg-magic-island.jpg');
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.4) contrast(1.15);
   z-index: 0;
 }
 
@@ -45,7 +67,7 @@
   width: 160px;
   height: 160px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -57,7 +79,8 @@
   height: 140px;
   object-fit: contain;
   border-radius: 50%;
-  mix-blend-mode: multiply; /* Blends white background if any */
+  mix-blend-mode: multiply;
+  /* Blends white background if any */
 }
 
 .glass-bubble {
@@ -69,7 +92,8 @@
   font-family: 'Baloo 2', sans-serif;
   font-weight: 700;
   font-size: 20px;
-  color: #5B21B6; /* Deep purple */
+  color: #5B21B6;
+  /* Deep purple */
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.5);
   position: relative;
@@ -94,7 +118,7 @@
 .children-title {
   font-family: 'Baloo 2', sans-serif;
   color: #FFFFFF;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
   margin-bottom: 24px;
   font-size: 28px;
 }
@@ -140,7 +164,7 @@
 .child-emoji {
   font-size: 48px;
   margin-bottom: 8px;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
 }
 
 .child-name {
@@ -148,40 +172,40 @@
   color: white;
   font-weight: 600;
   font-size: 18px;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 /* ── RIGHT COLUMN ───────────────────────────────────────── */
 .premium-right {
   position: relative;
-  flex: 0 0 500px;
+  flex: 0 0 525px;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: rgba(0,0,0,0.1); /* Subtle darkening behind the panel */
+  background: transparent;
 }
 
 .glass-panel {
   width: 100%;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-radius: 32px;
-  padding: 48px 40px;
-  box-shadow: 
-    0 24px 48px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  animation: fadeIn 0.8s ease-out;
+  padding: 65px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transform: scale(0.85);
+  transform-origin: center;
+  animation: formFadeInScale 0.8s ease-out forwards;
 }
 
 .brand-logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 32px;
+  margin-bottom: 26px;
 }
 
 .brand-icon {
@@ -202,22 +226,26 @@
   font-family: 'Baloo 2', sans-serif;
   font-weight: 800;
   font-size: 28px;
-  color: #1F2937;
+  color: #FFFFFF;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   letter-spacing: -0.5px;
 }
 
 .form-title {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: #FFFFFF;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   margin-bottom: 8px;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .form-subtitle {
-  color: #6B7280;
+  color: #E5E7EB;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   font-size: 15px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .error-box {
@@ -236,19 +264,20 @@
 
 /* Forms */
 .premium-form .input-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .premium-form label {
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   margin-bottom: 8px;
 }
 
 .premium-form label span {
-  color: #9CA3AF;
+  color: #E5E7EB;
   font-weight: 400;
 }
 
@@ -267,7 +296,7 @@
 
 .premium-form input {
   width: 100%;
-  padding: 16px 16px 16px 48px;
+  padding: 14px 16px 14px 48px;
   background: #F9FAFB;
   border: 1px solid #E5E7EB;
   border-radius: 16px;
@@ -303,7 +332,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
   font-size: 14px;
 }
 
@@ -311,13 +340,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #4B5563;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   font-weight: 500;
   cursor: pointer;
 }
 
 .forgot-pass {
-  color: #8B5CF6;
+  color: #DDD6FE;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   font-weight: 600;
   text-decoration: none;
 }
@@ -329,7 +360,7 @@
 /* Buttons */
 .btn-primary {
   width: 100%;
-  padding: 16px;
+  padding: 14px;
   background: linear-gradient(135deg, #8B5CF6, #6D28D9);
   color: white;
   border: none;
@@ -355,16 +386,19 @@
   display: flex;
   align-items: center;
   text-align: center;
-  margin: 32px 0;
-  color: #9CA3AF;
+  margin: 24px 0;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   font-size: 14px;
 }
 
-.divider::before, .divider::after {
+.divider::before,
+.divider::after {
   content: '';
   flex: 1;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
+
 .divider span {
   padding: 0 16px;
 }
@@ -372,7 +406,7 @@
 .social-login {
   display: flex;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .btn-social {
@@ -381,7 +415,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px;
+  padding: 12px;
   background: white;
   border: 1px solid #E5E7EB;
   border-radius: 16px;
@@ -402,43 +436,91 @@
   font-size: 20px;
   font-weight: 900;
 }
-.google-icon { color: #EA4335; }
-.fb-icon { color: #1877F2; }
+
+.google-icon {
+  color: #EA4335;
+}
+
+.fb-icon {
+  color: #1877F2;
+}
 
 .auth-switch {
   text-align: center;
   font-size: 15px;
-  color: #4B5563;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .auth-switch span {
-  color: #8B5CF6;
+  color: #DDD6FE;
   font-weight: 600;
   cursor: pointer;
 }
+
 .auth-switch span:hover {
   text-decoration: underline;
 }
 
 /* Animations */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
 }
 
 @keyframes popIn {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  0% { transform: translateY(40px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  0% {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes fadeIn {
-  0% { transform: translateX(20px); opacity: 0; }
-  100% { transform: translateX(0); opacity: 1; }
+  0% {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes formFadeInScale {
+  0% {
+    transform: translateX(20px) scale(0.85);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0) scale(0.85);
+    opacity: 1;
+  }
 }
 
 /* Responsive */
@@ -447,22 +529,27 @@
     flex-direction: column;
     overflow-y: auto;
   }
+
   .premium-left {
     flex: none;
     padding: 40px 24px;
     align-items: center;
     text-align: center;
   }
+
   .premium-right {
     flex: none;
     width: 100%;
     padding: 24px;
     background: transparent;
   }
+
   .children-list {
     justify-content: center;
   }
+
   .glass-bubble {
-    display: none; /* Hide on small screens for cleaner layout */
+    display: none;
+    /* Hide on small screens for cleaner layout */
   }
 }
