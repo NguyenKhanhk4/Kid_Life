@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from './user.model';
 import { RegisterInput, LoginInput, ChangePasswordInput } from './auth.validation';
+import { firebaseAdmin } from '../../config/firebase';
+import crypto from 'crypto';
 
 const SALT_ROUNDS = 10;
 const ACCESS_TOKEN_EXPIRES = '15m';
@@ -110,6 +112,53 @@ export async function loginService(input: LoginInput) {
   await User.findByIdAndUpdate(user._id, { refreshToken });
 
   return { user: sanitizeUser(user), token, refreshToken };
+}
+
+// ─── Google Login ─────────────────────────────────────────────────────────────
+export async function loginWithGoogleService(idToken: string) {
+  try {
+    const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
+    const { email, name } = decodedToken;
+
+    if (!email) {
+      const err = new Error('Token không có email');
+      (err as any).code = 'INVALID_GOOGLE_TOKEN';
+      (err as any).statusCode = 400;
+      throw err;
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const randomPassword = crypto.randomBytes(16).toString('hex');
+      const passwordHash = await bcrypt.hash(randomPassword, SALT_ROUNDS);
+      
+      user = await User.create({
+        email,
+        passwordHash,
+        fullName: name || 'Người dùng Google',
+        role: 'parent',
+      });
+    } else if (user.status === 'locked') {
+      const err = new Error('Tài khoản đã bị khóa');
+      (err as any).code = 'ACCOUNT_LOCKED';
+      (err as any).statusCode = 403;
+      throw err;
+    }
+
+    const token = generateAccessToken({ id: String(user._id), role: user.role });
+    const refreshToken = generateRefreshToken({ id: String(user._id), role: user.role });
+
+    await User.findByIdAndUpdate(user._id, { refreshToken });
+
+    return { user: sanitizeUser(user), token, refreshToken };
+  } catch (error: any) {
+    if (error.statusCode) throw error;
+    const err = new Error('Xác thực Google thất bại');
+    (err as any).code = 'GOOGLE_AUTH_FAILED';
+    (err as any).statusCode = 401;
+    throw err;
+  }
 }
 
 // ─── Refresh Token ────────────────────────────────────────────────────────────

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { IoLogOutOutline } from 'react-icons/io5';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
+import { useAuth } from '@/modules/auth/AuthContext';
 import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
 import TaskCelebrationToast from '@/shared/components/TaskCelebrationToast';
 
-const D = MOCK_KIDLIFE_DATA;
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const NAV_ITEMS = [
   { path: '/child/home', label: 'Trang chủ', emoji: '🏠' },
@@ -20,7 +20,28 @@ const NAV_ITEMS = [
 export default function ChildLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [wallet, setWallet] = useState<WalletData>(getWalletData);
+  const [childProfile, setChildProfile] = useState<any | null>(null);
+  const [petInfo, setPetInfo] = useState<any | null>(null);
+
+  // Fetch child profile from API
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/api/children`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(json => { if (json.success && json.data?.length > 0) setChildProfile(json.data[0]); })
+      .catch(() => {});
+  }, [token]);
+
+  // Fetch pet info from API
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/api/pet`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(json => { if (json.success && json.data) setPetInfo(json.data); })
+      .catch(() => {});
+  }, [token]);
 
   useEffect(() => {
     const handleWalletUpdate = (e: Event) => {
@@ -58,22 +79,26 @@ export default function ChildLayout() {
 
         {/* Pet Mini Showcase */}
         <div className="child-sidebar-pet">
-          <div className="child-sidebar-pet-emoji">{D.pet.emoji}</div>
-          <div className="child-sidebar-pet-name">{D.pet.name}</div>
+          <div className="child-sidebar-pet-emoji">{petInfo?.emoji ?? '🐣'}</div>
+          <div className="child-sidebar-pet-name">{petInfo?.name ?? 'Thú cưng'}</div>
           <div className="child-sidebar-pet-level">
-            Cấp {D.pet.level} • 🔥 {D.pet.streak} ngày streak
+            Cấp {petInfo?.level ?? 1} • 🔥 {petInfo?.streakDays ?? petInfo?.streak_days ?? 0} ngày streak
           </div>
         </div>
 
         {/* Child User Info */}
         <div className="web-sidebar-user">
-          <div className="web-sidebar-avatar">
-            {D.child.avatar}
+          <div className="web-sidebar-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', border: '1px solid #E5E7EB', borderRadius: '50%', width: 44, height: 44 }}>
+            {childProfile?.avatar?.startsWith('/') ? (
+              <img src={childProfile.avatar} alt="avatar" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+            ) : (
+              childProfile?.avatar ?? '🧒'
+            )}
           </div>
           <div>
-            <div className="web-sidebar-user-name">Bé {D.child.name}</div>
+            <div className="web-sidebar-user-name">Bé {childProfile?.name ?? '...'}</div>
             <div className="web-sidebar-user-role">
-              ⭐ {wallet.balance.toLocaleString()} XP • Cấp {D.child.level}
+              ⭐ {wallet.balance.toLocaleString()} XP • Cấp {childProfile?.level ?? 1}
             </div>
           </div>
         </div>

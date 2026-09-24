@@ -26,6 +26,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  loginWithGoogle: (idToken: string) => Promise<AuthUser>;
   register: (data: RegisterPayload) => Promise<AuthUser>;
   logout: () => void;
 }
@@ -110,6 +111,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return userData;
   }, []);
 
+  // ── Google Login ──────────────────────────────────────────────────────────
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    const res = await fetch(`${API_BASE}/api/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+    const json = await res.json();
+
+    if (!json.success) {
+      throw new Error(json.error?.message || 'Đăng nhập Google thất bại');
+    }
+
+    const { token: accessToken, refreshToken, user: userData } = json.data;
+    setToken(accessToken);
+    setUser(userData);
+    sessionStorage.setItem('kl_rt', refreshToken);
+    return userData;
+  }, []);
+
   // ── Register ──────────────────────────────────────────────────────────────
   const register = useCallback(async (data: RegisterPayload) => {
     const res = await fetch(`${API_BASE}/api/auth/register`, {
@@ -149,6 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!token,
         isLoading,
         login,
+        loginWithGoogle,
         register,
         logout,
       }}

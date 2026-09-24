@@ -1,6 +1,6 @@
 // Children Routes — mount tại /api/children
 import { Router } from 'express';
-import { getChildren, createChild, updateChild, resetPin } from './children.controller';
+import { getChildren, createChild, updateChild, resetPin, deleteChild, verifyPin } from './children.controller';
 import authMiddleware from '../../middleware/authMiddleware';
 import requireRole from '../../middleware/rbacMiddleware';
 import validateRequest from '../../middleware/validateRequest';
@@ -23,5 +23,11 @@ router.put('/:id', validateRequest(updateChildSchema), updateChild);
 
 // POST /api/children/:id/reset-pin
 router.post('/:id/reset-pin', validateRequest(resetPinSchema), resetPin);
+
+// DELETE /api/children/:id
+router.delete('/:id', deleteChild);
+
+// POST /api/children/:id/verify-pin
+router.post('/:id/verify-pin', verifyPin);
 
 export default router;

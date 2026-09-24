@@ -2,11 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { IoPersonAddOutline, IoChevronDownOutline } from 'react-icons/io5';
 import { useAuth } from '@/modules/auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
 import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
 import '@/modules/auth/auth-kids.css';
 
-const D = MOCK_KIDLIFE_DATA;
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface ChildOption {
@@ -25,22 +23,9 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
   const [open, setOpen]         = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const buildDefaultMock = (): ChildOption => ({
-    _id: D.child.id,
-    name: D.child.name,
-    avatar: D.child.avatar,
-    level: D.child.level,
-    xp: getWalletData().balance,
-  });
-
-  // Fetch children (có fallback về bé Minh Anh nếu DB chưa có)
+  // Fetch children from API, show empty state if none
   useEffect(() => {
-    const defaultMock = buildDefaultMock();
-    if (!token) {
-      setChildren([defaultMock]);
-      setSelected(defaultMock);
-      return;
-    }
+    if (!token) return;
     fetch(`${API_BASE}/api/children`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -49,15 +34,9 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
         if (json.success && json.data?.length > 0) {
           setChildren(json.data);
           setSelected(json.data[0]);
-        } else {
-          setChildren([defaultMock]);
-          setSelected(defaultMock);
         }
       })
-      .catch(() => {
-        setChildren([defaultMock]);
-        setSelected(defaultMock);
-      });
+      .catch(() => {});
   }, [token]);
 
   // Lắng nghe thay đổi ví điểm realtime để cập nhật XP
@@ -65,18 +44,14 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
     const handleWalletUpdate = (e: Event) => {
       const custom = e as CustomEvent<WalletData>;
       const newBalance = custom.detail ? custom.detail.balance : getWalletData().balance;
-      setChildren(prev =>
-        prev.map(c => (c._id === D.child.id || c.name === D.child.name ? { ...c, xp: newBalance } : c))
-      );
+      setChildren(prev => prev.map(c => ({ ...c, xp: newBalance })));
       setSelected(prev => (prev ? { ...prev, xp: newBalance } : null));
     };
 
     window.addEventListener('kidlife_wallet_update', handleWalletUpdate);
     window.addEventListener('storage', () => {
       const currentXP = getWalletData().balance;
-      setChildren(prev =>
-        prev.map(c => (c._id === D.child.id || c.name === D.child.name ? { ...c, xp: currentXP } : c))
-      );
+      setChildren(prev => prev.map(c => ({ ...c, xp: currentXP })));
       setSelected(prev => (prev ? { ...prev, xp: currentXP } : null));
     });
 
@@ -124,7 +99,9 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
         aria-expanded={open}
         aria-label={`Đang xem bé: ${selected?.name ?? 'Chọn bé'}`}
       >
-        <span className="kpicker-avatar" aria-hidden="true">{selected?.avatar ?? '🧒'}</span>
+        <span className="kpicker-avatar" aria-hidden="true" style={{ width: 36, height: 36, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', border: '1px solid #E5E7EB', borderRadius: '50%' }}>
+          {selected?.avatar?.startsWith('/') ? <img src={selected.avatar} alt="avatar" style={{ width: '85%', height: '85%', objectFit: 'contain' }} /> : (selected?.avatar ?? '🧒')}
+        </span>
         <span className="kpicker-name">{selected?.name ?? 'Chọn bé'}</span>
         <IoChevronDownOutline
           size={14}
@@ -150,7 +127,9 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
               role="option"
               aria-selected={selected?._id === child._id}
             >
-              <span className="kpicker-opt-avatar" aria-hidden="true">{child.avatar}</span>
+              <span className="kpicker-opt-avatar" aria-hidden="true" style={{ width: 44, height: 44, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', border: '1px solid #E5E7EB', borderRadius: '50%' }}>
+                {child.avatar?.startsWith('/') ? <img src={child.avatar} alt="avatar" style={{ width: '85%', height: '85%', objectFit: 'contain' }} /> : child.avatar}
+              </span>
               <span>
                 <span className="kpicker-opt-name">{child.name}</span>
                 <span className="kpicker-opt-meta">Cấp {child.level} · {child.xp.toLocaleString('vi-VN')} XP</span>

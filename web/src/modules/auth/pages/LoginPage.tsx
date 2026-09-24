@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   IoMailOutline, IoLockClosedOutline,
@@ -8,18 +8,21 @@ import {
 import { useAuth } from '../AuthContext';
 import '../auth-premium.css';
 import PinEntryModal from '../components/PinEntryModal';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../../../config/firebase';
 
 type Mode = 'login' | 'register';
 
 interface ChildOption {
   _id: string;
   name: string;
-  emoji: string;
+  avatar?: string;
+  emoji?: string;
 }
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
 
   const [mode, setMode]           = useState<Mode>('login');
   const [email, setEmail]         = useState('');
@@ -32,14 +35,18 @@ export default function LoginPage() {
 
   const [selectedChild, setSelectedChild] = useState<ChildOption | null>(null);
 
-  // Premium UI mocked children
-  const childrenList: ChildOption[] = [
-    { _id: '1', name: 'Gấu Nâu', emoji: '🐻' },
-    { _id: '2', name: 'Thỏ Trắng', emoji: '🐰' },
-    { _id: '3', name: 'Mèo Lười', emoji: '🐱' },
-    { _id: '4', name: 'Gấu Trúc', emoji: '🐼' },
-    { _id: '5', name: 'Ếch Xanh', emoji: '🐸' },
-  ];
+  const [childrenList, setChildrenList] = useState<ChildOption[]>([]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('kl_device_children');
+      if (saved) {
+        setChildrenList(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error('Failed to parse children from localStorage', e);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +64,37 @@ export default function LoginPage() {
         else navigate('/role');
       }, 500);
     } catch (err: any) {
-      setError(err.message || 'Đã có lỗi xảy ra');
+      let errorMsg = err.message || 'Đã có lỗi xảy ra';
+      if (errorMsg.includes('auth/configuration-not-found')) errorMsg = 'Dự án chưa bật tính năng đăng nhập Email/Mật khẩu trên Firebase.';
+      else if (errorMsg.includes('auth/invalid-credential') || errorMsg.includes('auth/wrong-password')) errorMsg = 'Email hoặc mật khẩu không chính xác.';
+      console.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      const userData = await loginWithGoogle(idToken);
+      
+      setTimeout(() => {
+        if (userData.role === 'admin') navigate('/admin');
+        else navigate('/role');
+      }, 500);
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        // Ignore if user manually closes popup
+        setError('');
+      } else {
+        let errorMsg = err.message || 'Đăng nhập Google thất bại';
+        if (errorMsg.includes('auth/configuration-not-found')) errorMsg = 'Dự án chưa bật tính năng đăng nhập Google trên Firebase.';
+        console.error(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -97,7 +134,13 @@ export default function LoginPage() {
                   onClick={() => setSelectedChild(child)}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <span className="child-emoji">{child.emoji}</span>
+                  <div className="child-emoji" style={{ width: 72, height: 72, borderRadius: 24, overflow: 'hidden', display: 'grid', placeItems: 'center', background: '#fff', boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.05)' }}>
+                    {child.avatar?.startsWith('/') ? (
+                      <img src={child.avatar} alt="avatar" style={{ width: '85%', height: '85%', objectFit: 'contain' }} />
+                    ) : (
+                      child.avatar || child.emoji || '🧒'
+                    )}
+                  </div>
                   <span className="child-name">{child.name}</span>
                 </div>
               );
@@ -123,12 +166,7 @@ export default function LoginPage() {
               : 'Bắt đầu hành trình giáo dục tuyệt vời cùng KidLife'}
           </p>
 
-          {error && (
-            <div className="error-box">
-              <span>⚠️</span>
-              <span>{error}</span>
-            </div>
-          )}
+
 
           <form onSubmit={handleSubmit} noValidate className="premium-form">
             {mode === 'register' && (
@@ -221,11 +259,8 @@ export default function LoginPage() {
                 <span>Hoặc tiếp tục với</span>
               </div>
               <div className="social-login">
-                <button className="btn-social google">
+                <button type="button" className="btn-social google" onClick={handleGoogleLogin} disabled={loading} style={{ width: '100%' }}>
                   <span className="social-icon google-icon">G</span> Google
-                </button>
-                <button className="btn-social facebook">
-                  <span className="social-icon fb-icon">f</span> Facebook
                 </button>
               </div>
             </>
