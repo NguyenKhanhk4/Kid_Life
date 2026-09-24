@@ -10,7 +10,8 @@ const D = MOCK_KIDLIFE_DATA;
 const NAV_ITEMS = [
   { path: '/child/home', label: 'Trang chủ', emoji: '🏠' },
   { path: '/child/tasks', label: 'Nhiệm vụ', emoji: '🎯' },
-  { path: '/child/lessons', label: 'Học bài', emoji: '📚' },
+  { path: '/child/video-lessons', label: 'Học bài', emoji: '🎬' },
+  { path: '/child/quiz-library', label: 'Kiểm tra trí nhớ', emoji: '🧠' },
   { path: '/child/wallet', label: 'Ví điểm', emoji: '💰' },
   { path: '/child/pet', label: 'Thú cưng', emoji: '🐉' },
   { path: '/child/account', label: 'Của tôi', emoji: '🧒' },
@@ -81,7 +82,10 @@ export default function ChildLayout() {
         <nav className="web-sidebar-nav">
           <div className="web-sidebar-section-label">Menu</div>
           {NAV_ITEMS.map((item) => {
+            const isQuizSection = item.path === '/child/quiz-library' &&
+              (location.pathname.startsWith('/child/quiz') || location.pathname.startsWith('/child/quiz-result'));
             const active = location.pathname === item.path ||
+              isQuizSection ||
               (item.path !== '/child/home' && location.pathname.startsWith(item.path));
             return (
               <button

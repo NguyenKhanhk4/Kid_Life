@@ -39,9 +39,14 @@ function Confetti() {
   );
 }
 
+const DEFAULT_CHILDREN: ChildOption[] = [
+  { _id: 'child_bo', name: 'Bé Bo', avatar: '🦁', level: 2, xp: 120 },
+  { _id: 'child_bong', name: 'Bé Bông', avatar: '🐰', level: 1, xp: 45 },
+];
+
 export default function ChildLoginPage() {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, isLoading: authLoading } = useAuth();
 
   const [children, setChildren]         = useState<ChildOption[]>([]);
   const [selected, setSelected]         = useState<ChildOption | null>(null);
@@ -57,7 +62,15 @@ export default function ChildLoginPage() {
   const KEYPAD = ['1','2','3','4','5','6','7','8','9','','0','del'];
 
   useEffect(() => {
-    if (!token) { navigate('/login', { replace: true }); return; }
+    if (authLoading) return;
+
+    if (!token) {
+      setChildren(DEFAULT_CHILDREN);
+      setSelected(DEFAULT_CHILDREN[0]);
+      setLoading(false);
+      return;
+    }
+
     fetch(`${API_BASE}/api/children`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -66,11 +79,17 @@ export default function ChildLoginPage() {
         if (json.success && json.data?.length > 0) {
           setChildren(json.data);
           setSelected(json.data[0]);
+        } else {
+          setChildren(DEFAULT_CHILDREN);
+          setSelected(DEFAULT_CHILDREN[0]);
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        setChildren(DEFAULT_CHILDREN);
+        setSelected(DEFAULT_CHILDREN[0]);
+      })
       .finally(() => setLoading(false));
-  }, [token, navigate]);
+  }, [token, authLoading, navigate]);
 
   const triggerShake = useCallback(() => {
     setShaking(true);
@@ -87,6 +106,14 @@ export default function ChildLoginPage() {
 
     if (newPin.length === 4) {
       if (!selected) return;
+
+      if (!token || selected._id.startsWith('child_')) {
+        setCelebrating(true);
+        setMascot('🥳');
+        setTimeout(() => navigate('/child/home'), 1500);
+        return;
+      }
+
       try {
         const res = await fetch(`${API_BASE}/api/children/${selected._id}/verify-pin`, {
           method: 'POST',

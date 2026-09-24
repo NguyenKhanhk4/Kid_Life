@@ -8,9 +8,10 @@ import { getTasks, TaskItem } from '@/shared/utils/taskStorage';
 const D = MOCK_KIDLIFE_DATA;
 
 const QUICK_ACTIONS = [
+  { emoji: '🎬', label: 'Học bài Video', path: '/child/video-lessons' },
+  { emoji: '🧠', label: 'Kiểm tra trí nhớ', path: '/child/quiz-library' },
   { emoji: '💳', label: 'Ví điểm', path: '/child/wallet' },
   { emoji: '🐉', label: 'Thú cưng', path: '/child/pet' },
-  { emoji: '📚', label: 'Học bài', path: '/child/lessons' },
   { emoji: '🌙', label: 'Kể chuyện', path: '/child/stories' },
   { emoji: '🧞‍♂️', label: 'Điều ước', path: '/child/wishes' },
 ];

@@ -255,7 +255,7 @@
   border-radius: var(--admin-radius-card);
   box-shadow: var(--admin-shadow);
   border: 1px solid var(--admin-border);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .admin-table-toolbar {
@@ -307,7 +307,7 @@
   color: var(--admin-ink);
 }
 .admin-table tbody tr:hover {
-  background-color: var(--admin-bg);
+  background-color: rgba(109, 79, 224, 0.05);
 }
 .admin-table tbody tr:last-child td {
   border-bottom: none;

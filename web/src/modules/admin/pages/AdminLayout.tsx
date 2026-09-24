@@ -16,6 +16,8 @@ export default function AdminLayout() {
     if (path.includes('/users')) return 'Gia đình & Người dùng';
     if (path.includes('/community')) return 'Cộng đồng';
     if (path.includes('/master-data')) return 'Danh mục Hệ thống';
+    if (path.includes('/quiz-bank')) return 'Ngân Hàng Câu Hỏi & Quiz';
+    if (path.includes('/video-bank')) return 'Ngân Hàng Bài Học Video';
     if (path.includes('/subscriptions')) return 'Gói Dịch Vụ';
     if (path.includes('/settings')) return 'Cấu hình Hệ thống';
     if (path.includes('/logs')) return 'Nhật ký & Hỗ trợ';

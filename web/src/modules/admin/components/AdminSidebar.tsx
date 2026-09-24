@@ -6,7 +6,9 @@ import {
   IoSettingsOutline, 
   IoFolderOpenOutline, 
   IoTimeOutline, 
-  IoStarOutline
+  IoStarOutline,
+  IoSchoolOutline,
+  IoVideocamOutline
 } from 'react-icons/io5';
 
 interface AdminSidebarProps {
@@ -22,6 +24,8 @@ export default function AdminSidebar({ collapsed }: AdminSidebarProps) {
     { path: '/admin/users', label: 'Gia đình', icon: <IoPeopleOutline /> },
     { path: '/admin/community', label: 'Cộng đồng', icon: <IoChatbubblesOutline /> },
     { path: '/admin/master-data', label: 'Danh mục', icon: <IoFolderOpenOutline /> },
+    { path: '/admin/quiz-bank', label: 'Ngân hàng Quiz', icon: <IoSchoolOutline /> },
+    { path: '/admin/video-bank', label: 'Ngân hàng Video', icon: <IoVideocamOutline /> },
     { path: '/admin/subscriptions', label: 'Gói dịch vụ', icon: <IoStarOutline /> },
     { path: '/admin/settings', label: 'Cấu hình', icon: <IoSettingsOutline /> },
     { path: '/admin/logs', label: 'Nhật ký', icon: <IoTimeOutline /> },

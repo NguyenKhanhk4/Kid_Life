@@ -1,6 +1,16 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { IoHomeOutline, IoListOutline, IoCheckmarkCircleOutline, IoPeopleOutline, IoPersonOutline, IoCardOutline, IoLogOutOutline } from 'react-icons/io5';
+import {
+  IoHomeOutline,
+  IoListOutline,
+  IoCheckmarkCircleOutline,
+  IoPeopleOutline,
+  IoPersonOutline,
+  IoCardOutline,
+  IoLogOutOutline,
+  IoVideocamOutline,
+  IoSchoolOutline,
+} from 'react-icons/io5';
 import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
 import { useAuth } from '@/modules/auth/AuthContext';
 import ChildPicker from '@/shared/components/ChildPicker';
@@ -13,6 +23,8 @@ const NAV_ITEMS = [
   { path: '/parent/home', label: 'Trang chủ', icon: IoHomeOutline, emoji: '🏠' },
   { path: '/parent/tasks', label: 'Nhiệm vụ', icon: IoListOutline, emoji: '📋' },
   { path: '/parent/approval', label: 'Duyệt thưởng', icon: IoCheckmarkCircleOutline, emoji: '✅' },
+  { path: '/parent/video-manage', label: 'Quản lý Video', icon: IoVideocamOutline, emoji: '🎬' },
+  { path: '/parent/quiz-manage', label: 'Quản lý Quiz', icon: IoSchoolOutline, emoji: '🧠' },
   { path: '/parent/ai-analytics', label: 'Báo cáo AI', icon: IoHomeOutline, emoji: '📊' },
   { path: '/parent/stories', label: 'Voice Studio', icon: IoHomeOutline, emoji: '🎤' },
   { path: '/parent/memory-lane', label: 'Memory Lane', icon: IoHomeOutline, emoji: '📷' },
