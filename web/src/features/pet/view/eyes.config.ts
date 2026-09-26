@@ -8,7 +8,6 @@ import eyesData from './eyes.data.json';
  * của chính ảnh đó, trượt xuống che mắt.
  *
  * Ảnh không khai báo mắt (mảng rỗng) thì không chớp — vd. mắt đang híp/nháy sẵn trong ảnh.
- * Căn chỉnh: bật "Hiện khung mắt" trong debug panel để thấy khung đè lên ảnh.
  */
 export interface EyeRig {
   x: number;

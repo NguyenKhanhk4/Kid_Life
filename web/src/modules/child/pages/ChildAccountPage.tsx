@@ -1,14 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
 import { IoLogOutOutline, IoShareSocial } from 'react-icons/io5';
 import ViralMilestoneModal from '@/modules/child/components/ViralMilestoneModal';
+import { useAuth } from '@/modules/auth/AuthContext';
+import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
 
 const D = MOCK_KIDLIFE_DATA;
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function ChildAccountPage() {
   const navigate = useNavigate();
+  const { token, logout } = useAuth();
   const [selectedBadge, setSelectedBadge] = useState<any | null>(null);
+  const [wallet, setWallet] = useState<WalletData>(getWalletData);
+
+  useEffect(() => {
+    const handleWalletUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<WalletData>;
+      setWallet(customEvent.detail || getWalletData());
+    };
+
+    window.addEventListener('kidlife_wallet_update', handleWalletUpdate);
+    window.addEventListener('focus', () => setWallet(getWalletData()));
+    window.addEventListener('storage', () => setWallet(getWalletData()));
+
+    return () => {
+      window.removeEventListener('kidlife_wallet_update', handleWalletUpdate);
+    };
+  }, []);
+
+  // Fetch child profile — parentId = req.user.id trong token
+  // Lấy bé đầu tiên; sau này Dev 3 có thể mở rộng với selectedChildId
+  const [childProfile, setChildProfile] = useState<any | null>(null);
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/api/children`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((json) => { if (json.success && json.data?.length > 0) setChildProfile(json.data[0]); })
+      .catch(() => {});
+  }, [token]);
 
   return (
     <div>
@@ -34,25 +65,25 @@ export default function ChildAccountPage() {
             }}
           >
             <div style={{ width: 90, height: 90, borderRadius: 45, background: '#E7EBFF', display: 'grid', placeItems: 'center', fontSize: 48, margin: '0 auto 14px' }}>
-              {D.child.avatar}
+              {childProfile?.avatar ?? D.child.avatar}
             </div>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-primary-dark)' }}>{D.child.name}</h2>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-primary-dark)' }}>{childProfile?.name ?? D.child.name}</h2>
             <p style={{ fontSize: 14, color: 'var(--kl-muted)', marginTop: 4 }}>
-              {D.child.age} tuổi • Cấp độ {D.child.level} Nhà Thám Hiểm
+              {(childProfile?.age ?? D.child.age)} tuổi • Cấp độ {childProfile?.level ?? D.child.level} Nhà Thám Hiểm
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 24 }}>
               <div style={{ background: '#fff', padding: 16, borderRadius: 16, border: '1px solid var(--kl-border)' }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-primary)' }}>{D.child.xp}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-primary)' }}>{wallet.balance.toLocaleString()}</div>
                 <div style={{ fontSize: 12, color: 'var(--kl-muted)' }}>Tổng XP</div>
               </div>
               <div style={{ background: '#fff', padding: 16, borderRadius: 16, border: '1px solid var(--kl-border)' }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-orange)' }}>{D.child.streak}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-orange)' }}>{childProfile?.streak ?? D.child.streak}</div>
                 <div style={{ fontSize: 12, color: 'var(--kl-muted)' }}>Ngày Streak</div>
               </div>
               <div style={{ background: '#fff', padding: 16, borderRadius: 16, border: '1px solid var(--kl-border)' }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-green)' }}>{D.child.completedTasksCount}</div>
-                <div style={{ fontSize: 12, color: 'var(--kl-muted)' }}>Nhiệm vụ</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--kl-green)' }}>{childProfile?.level ?? D.child.completedTasksCount}</div>
+                <div style={{ fontSize: 12, color: 'var(--kl-muted)' }}>Cấp độ</div>
               </div>
             </div>
           </div>
@@ -78,7 +109,7 @@ export default function ChildAccountPage() {
             </button>
 
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => { logout(); navigate('/login'); }}
               className="kl-card"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',

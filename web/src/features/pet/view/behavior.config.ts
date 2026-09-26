@@ -20,7 +20,7 @@ export type ActionMotion =
 export type PetMotion = IdleMotion | ActionMotion;
 
 export interface MotionSpec {
-  /** Tên hiển thị trong debug panel */
+  /** Tên mô tả animation (chỉ để đọc config cho dễ) */
   label: string;
   motion: ActionMotion;
   duration: number;

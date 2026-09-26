@@ -53,19 +53,6 @@ export function preloadVoices(speciesId: string) {
   for (const name of VOICE_FILES) urlsFor(species.imageBaseUrl, name).forEach(load);
 }
 
-/** Debug: file nào của loài đang có (tên file → đuôi tìm thấy, hoặc null). */
-export async function getVoiceStatus(speciesId: string): Promise<Record<string, string | null>> {
-  const species = getSpeciesConfig(speciesId);
-  const out: Record<string, string | null> = {};
-  if (!species) return out;
-  for (const name of VOICE_FILES) {
-    const found = await Promise.all(urlsFor(species.imageBaseUrl, name).map(load));
-    const idx = found.findIndex(Boolean);
-    out[name] = idx >= 0 ? EXTS[idx] : null;
-  }
-  return out;
-}
-
 function findReady(base: string, name: string): AudioBuffer | null {
   for (const url of urlsFor(base, name)) {
     const buf = ready.get(url);

@@ -1,0 +1,1 @@
+const mongoose = require('mongoose'); mongoose.connect('mongodb+srv://ngothanhbinh29072000_db_user:H5Nva1g2RfMGhtCD@cluster0.voxxggf.mongodb.net/kidlife?retryWrites=true&w=majority').then(async () => { await mongoose.connection.db.collection('users').updateOne({ email: 'sysadmin@kidlife.vn' }, { $set: { role: 'admin' } }); console.log('Updated role to admin'); process.exit(0); })

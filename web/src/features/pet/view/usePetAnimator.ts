@@ -13,7 +13,7 @@ import { playVoice, preloadVoices } from './petVoice';
  * Luật ưu tiên: animation mới chỉ ngắt được animation đang chạy khi có priority CAO HƠN.
  * Vd. feed ngắt được tap, tap không ngắt được feed; evolve đợi feed chạy xong rồi mới chạy.
  */
-const PRIORITY = { random: 0, tap: 1, multiTap: 2, feed: 3, evolve: 4, debug: 5 } as const;
+const PRIORITY = { random: 0, tap: 1, multiTap: 2, feed: 3, evolve: 4 } as const;
 type PlayKind = keyof typeof PRIORITY;
 
 interface Playing {
@@ -34,11 +34,9 @@ function preloadStage(speciesId: string, stage: PetStage) {
 export interface UsePetAnimatorOptions {
   speciesId: string;
   stage: PetStage;
-  /** Nhân mọi khoảng hẹn giờ random idle — debug dùng giá trị nhỏ để test nhanh */
-  timeScale?: number;
 }
 
-export function usePetAnimator({ speciesId, stage, timeScale = 1 }: UsePetAnimatorOptions) {
+export function usePetAnimator({ speciesId, stage }: UsePetAnimatorOptions) {
   const behavior = useMemo(() => getPetBehavior(speciesId), [speciesId]);
   const particleRef = useRef<ParticleLayerHandle>(null);
 
@@ -50,8 +48,6 @@ export function usePetAnimator({ speciesId, stage, timeScale = 1 }: UsePetAnimat
   behaviorRef.current = behavior;
   const stageRef = useRef(stage);
   stageRef.current = stage;
-  const timeScaleRef = useRef(timeScale);
-  timeScaleRef.current = timeScale;
 
   const playingRef = useRef<Playing | null>(null);
   const pendingEvolveRef = useRef<PetStage | null>(null);
@@ -100,7 +96,7 @@ export function usePetAnimator({ speciesId, stage, timeScale = 1 }: UsePetAnimat
       randomTimers.current = [];
       behaviorRef.current.randomIdles.forEach((spec, idx) => {
         const loop = () => {
-          const delay = (spec.minMs + Math.random() * (spec.maxMs - spec.minMs)) * timeScaleRef.current;
+          const delay = (spec.minMs + Math.random() * (spec.maxMs - spec.minMs));
           randomTimers.current[idx] = setTimeout(() => {
             if (!playingRef.current) play(spec, 'random');
             loop();
@@ -150,7 +146,7 @@ export function usePetAnimator({ speciesId, stage, timeScale = 1 }: UsePetAnimat
 
     const onStageChange = (prev: PetStage, next: PetStage) => {
       if (next < prev) {
-        // chỉ xảy ra khi debug/reset — đổi ảnh ngay, không animation
+        // stage giảm (dữ liệu được sửa từ phía server) — đổi ảnh ngay, không animation
         pendingEvolveRef.current = null;
         setDisplayStage(next);
         return;
@@ -164,25 +160,23 @@ export function usePetAnimator({ speciesId, stage, timeScale = 1 }: UsePetAnimat
       }
     };
 
-    const debugPlay = (spec: MotionSpec) => play(spec, 'debug');
-
-    return { tap, feed, onStageChange, scheduleRandomIdles, clearSchedules, clearAll, debugPlay };
+    return { tap, feed, onStageChange, scheduleRandomIdles, clearSchedules, clearAll };
     // Tạo 1 lần: mọi giá trị thay đổi đều đọc qua ref. speciesId không đổi trong vòng đời
     // component vì PetScreen render PetView với key={speciesId}.
   }, []);
 
-  // Hẹn giờ random idle; chạy lại khi đổi tốc độ debug.
+  // Hẹn giờ random idle; chạy lại khi đổi loài.
   useEffect(() => {
     api.scheduleRandomIdles();
     return api.clearSchedules;
-  }, [api, behavior, timeScale]);
+  }, [api, behavior]);
 
   useEffect(() => api.clearAll, [api]);
 
   // Tải trước tiếng kêu của loài để lúc chạm phát ngay, không trễ
   useEffect(() => preloadVoices(speciesId), [speciesId]);
 
-  // Phát hiện đổi stage (tiến hoá / debug)
+  // Phát hiện đổi stage (tiến hoá)
   const prevStageRef = useRef(stage);
   useEffect(() => {
     const prev = prevStageRef.current;
@@ -201,13 +195,10 @@ export function usePetAnimator({ speciesId, stage, timeScale = 1 }: UsePetAnimat
     /** Hành vi có eyesClosed (vd. gừ gừ) → nhắm mắt */
     eyesClosed: !!playing?.spec.eyesClosed,
     displayStage,
-    /** Tên animation đang chạy (cho debug panel) */
-    currentLabel: playing?.spec.label ?? 'Idle',
     /** Nút cho ăn tạm khoá khi đang ăn/tiến hoá */
     feedLocked: !!playing && PRIORITY[playing.kind] >= PRIORITY.feed,
     tap: api.tap,
     feed: api.feed,
-    debugPlay: api.debugPlay,
   };
 }
 

@@ -1,5 +1,6 @@
 import { HttpError } from '../../shared/http';
-import { PET_CONFIG, isPetSpeciesId } from './pet.config';
+import Child from '../children/children.model';
+import { PET_CONFIG, PET_SPECIES_IDS, isPetSpeciesId } from './pet.config';
 import {
   activeStreak,
   applyFeed,
@@ -26,6 +27,8 @@ export interface PetDTO {
   totalExp: number;
   feedsLeftToday: number;
   maxFeedsPerDay: number;
+  /** XP của bé bị trừ mỗi lần cho ăn */
+  feedXpCost: number;
   /** Chuỗi ngày cho ăn liên tục còn hiệu lực */
   streakDays: number;
   mood: PetMood;
@@ -68,6 +71,11 @@ export class PetService {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
+  /** Các con số web cần (web không tự fix cứng nữa). */
+  getConfig() {
+    return { ...PET_CONFIG, speciesIds: PET_SPECIES_IDS };
+  }
+
   toDTO(state: PetState): PetDTO {
     const now = this.now();
     return {
@@ -80,6 +88,7 @@ export class PetService {
       totalExp: state.totalExp,
       feedsLeftToday: feedsLeftToday(state, now, this.tzOffsetMinutes),
       maxFeedsPerDay: PET_CONFIG.maxFeedsPerDay,
+      feedXpCost: PET_CONFIG.feedXpCost,
       streakDays: activeStreak(state, now, this.tzOffsetMinutes),
       mood: computeMood(state.lastFedAt, now),
       lastFedAt: state.lastFedAt ? state.lastFedAt.toISOString() : null,
@@ -95,6 +104,10 @@ export class PetService {
   async getPet(childId: string): Promise<PetDTO | null> {
     const doc = await PetModel.findOne({ childId });
     return doc ? this.toDTO(toState(doc)) : null;
+  }
+
+  getXpBalance(childId: string): Promise<number> {
+    return this.xp.getBalance(childId);
   }
 
   async createPet(childId: string, speciesId: unknown): Promise<PetDTO> {
@@ -118,7 +131,8 @@ export class PetService {
     }
 
     const cost = PET_CONFIG.feedXpCost;
-    if (!(await this.xp.spend(childId, cost, 'pet-feed'))) {
+    const refId = String(doc._id);
+    if (!(await this.xp.spend(childId, cost, 'pet_feed', refId))) {
       throw new HttpError(400, 'NOT_ENOUGH_XP', `Cần ${cost} XP để cho thú cưng ăn`);
     }
 
@@ -134,11 +148,13 @@ export class PetService {
     try {
       await doc.save();
     } catch (err) {
-      await this.xp.add(childId, cost, 'pet-feed-refund'); // lưu thất bại → hoàn lại XP đã trừ
+      await this.xp.add(childId, cost, 'pet_feed_refund', refId); // lưu thất bại → hoàn lại XP đã trừ
       throw err;
     }
 
-    if (outcome.streakBonus) await this.xp.add(childId, PET_CONFIG.streakBonus.childXp, 'pet-streak-bonus');
+    if (outcome.streakBonus) await this.xp.add(childId, PET_CONFIG.streakBonus.childXp, 'pet_streak_bonus', refId);
+    // children.streak = chuỗi ngày chăm pet (Dev 3 cập nhật), hiển thị ở hồ sơ bé
+    await Child.updateOne({ _id: childId }, { streak: state.streakDays });
 
     return {
       pet: this.toDTO(state),
@@ -154,9 +170,4 @@ export class PetService {
     };
   }
 
-  /** Xoá pet để chọn lại loài (dùng cho dev/test; production nên chặn hoặc cần phụ huynh xác nhận). */
-  async deletePet(childId: string): Promise<boolean> {
-    const res = await PetModel.deleteOne({ childId });
-    return res.deletedCount > 0;
-  }
 }

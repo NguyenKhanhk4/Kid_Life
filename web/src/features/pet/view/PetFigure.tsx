@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import type { WornAccessories } from '../types';
+import { AccessoryLayer } from './AccessoryLayer';
 import type { EyeRig } from './eyes.config';
 import styles from './PetView.module.css';
 
@@ -8,10 +10,8 @@ interface PetFigureProps {
   alt: string;
   glow?: boolean;
   eyesClosed: boolean;
-  /** Debug: vẽ khung mắt đè lên ảnh để căn chỉnh eyes.data.json */
-  showEyes?: boolean;
-  /** Debug: tăng số này để ép chớp mắt ngay */
-  blinkSignal?: number;
+  /** Phụ kiện đang mặc / mặc thử */
+  accessories?: WornAccessories;
 }
 
 const BLINK_MS = 180;
@@ -21,7 +21,7 @@ const EYE_PAD = 1.35;
 type Timer = ReturnType<typeof setTimeout>;
 
 /** Chớp mắt ngẫu nhiên mỗi 2,5–6s, thỉnh thoảng chớp 2 lần liền. */
-function useBlink(enabled: boolean, signal: number) {
+function useBlink(enabled: boolean) {
   const [blinking, setBlinking] = useState(false);
 
   useEffect(() => {
@@ -44,13 +44,6 @@ function useBlink(enabled: boolean, signal: number) {
     return () => timers.forEach(clearTimeout);
   }, [enabled]);
 
-  useEffect(() => {
-    if (!enabled || signal === 0) return;
-    setBlinking(true);
-    const t = setTimeout(() => setBlinking(false), BLINK_MS);
-    return () => clearTimeout(t);
-  }, [enabled, signal]);
-
   return blinking;
 }
 
@@ -58,8 +51,8 @@ function useBlink(enabled: boolean, signal: number) {
  * Vẽ pet từ 1 ảnh stage + mí mắt phủ lên để chớp mắt (ảnh không bị cắt tách).
  * Mọi chuyển động của cả con (nhún, lắc…) do phần tử cha (.avatar) đảm nhận.
  */
-export function PetFigure({ src, eyes, alt, glow, eyesClosed, showEyes, blinkSignal = 0 }: PetFigureProps) {
-  const blinking = useBlink(eyes.length > 0 && !eyesClosed, blinkSignal);
+export function PetFigure({ src, eyes, alt, glow, eyesClosed, accessories }: PetFigureProps) {
+  const blinking = useBlink(eyes.length > 0 && !eyesClosed);
 
   return (
     <div className={`${styles.figure} ${glow ? styles.glow : ''}`}>
@@ -95,13 +88,7 @@ export function PetFigure({ src, eyes, alt, glow, eyesClosed, showEyes, blinkSig
         );
       })}
 
-      {showEyes && eyes.length > 0 && (
-        <svg className={styles.eyeOverlay} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          {eyes.map((e, i) => (
-            <ellipse key={i} cx={e.x} cy={e.y} rx={e.w / 2} ry={e.h / 2} fill="none" stroke="#ff00ff" strokeWidth="0.5" />
-          ))}
-        </svg>
-      )}
+      {accessories && <AccessoryLayer worn={accessories} eyes={eyes} />}
     </div>
   );
 }

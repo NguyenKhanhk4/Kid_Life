@@ -9,26 +9,69 @@ export interface PetSpeciesConfig {
   imageExt?: string;
 }
 
-export interface EvolutionConfig {
-  /** EXP cộng thêm mỗi lần feed() */
-  expPerFeed: number;
-  /** Số lần cho ăn tối đa mỗi ngày — chặn "cày" để pet lớn từ từ, bé không nhanh chán */
+export type PetMood = 'sad' | 'neutral' | 'happy' | 'excited';
+
+/** Pet của bé — đúng dữ liệu backend trả về (GET/POST /api/pet), server đã tính sẵn mọi thứ. */
+export interface Pet {
+  childId: string;
+  speciesId: string;
+  stage: PetStage;
+  maxStage: number;
+  /** EXP trong stage hiện tại (về 0 khi lên stage) */
+  exp: number;
+  /** EXP cần để lên stage kế; null nếu đã tối đa */
+  expToNextStage: number | null;
+  totalExp: number;
+  feedsLeftToday: number;
   maxFeedsPerDay: number;
-  /** Stage cao nhất, feed() không tăng exp/stage nữa khi đã ở stage này */
-  maxStage: PetStage;
-  /** EXP cần để đi từ stage này lên stage kế tiếp, ví dụ expToNextStage[1] = ngưỡng để lên stage 2 */
-  expToNextStage: Record<PetStage, number>;
-  /** Hệ số phóng to Avatar theo từng stage, view dùng để tính CSS scale */
-  stageScale: Record<PetStage, number>;
+  /** XP của bé bị trừ mỗi lần cho ăn */
+  feedXpCost: number;
+  /** Chuỗi ngày cho ăn liên tục còn hiệu lực */
+  streakDays: number;
+  mood: PetMood;
+  lastFedAt: string | null;
 }
 
-export interface Pet {
-  speciesId: string;
-  currentStage: PetStage;
-  /** EXP trong stage hiện tại (về 0 khi lên stage) */
-  currentExp: number;
-  /** Số lần đã cho ăn trong ngày `lastFedDate` */
-  feedsToday: number;
-  /** Ngày cho ăn gần nhất, dạng YYYY-MM-DD theo giờ máy (null = chưa cho ăn lần nào) */
-  lastFedDate: string | null;
+/** GET /api/pet/config */
+export interface PetConfig {
+  maxStage: number;
+  expPerFeed: number;
+  maxFeedsPerDay: number;
+  feedXpCost: number;
+  expToNextStage: number[];
+  streakBonus: { everyDays: number; childXp: number; petExp: number };
+  speciesIds: string[];
 }
+
+/** POST /api/pet/feed → result */
+export interface FeedResult {
+  gainedExp: number;
+  evolved: boolean;
+  fromStage: number;
+  toStage: number;
+  streakBonus: boolean;
+  xpSpent: number;
+  xpBalance: number;
+}
+
+export type AccessoryCategory = 'hat' | 'glasses' | 'crown' | 'cape';
+
+/** 1 món trong tủ đồ (GET /api/pet/accessories) — server đã gộp trạng thái của bé. */
+export interface Accessory {
+  id: string;
+  name: string;
+  /** Emoji hoặc URL ảnh */
+  icon: string;
+  category: AccessoryCategory;
+  costXp: number;
+  isOwned: boolean;
+  isEquipped: boolean;
+}
+
+export interface Wardrobe {
+  accessories: Accessory[];
+  xpBalance: number;
+}
+
+/** Phụ kiện đang hiện trên pet (đã mặc hoặc đang mặc thử) */
+export type WornAccessories = Partial<Record<AccessoryCategory, Accessory>>;

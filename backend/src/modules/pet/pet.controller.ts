@@ -1,43 +1,30 @@
-import type { Request } from 'express';
-import { HttpError, asyncHandler } from '../../shared/http';
+import { asyncHandler } from '../../shared/http';
+import { resolveChildId } from './pet.access';
 import type { PetService } from './pet.service';
-
-/**
- * childId: khi có auth (Dev 1) sẽ lấy từ token (req.user.childId).
- * Tạm thời cho truyền qua ?childId= hoặc body.childId để web/Postman test được.
- */
-function getChildId(req: Request): string {
-  const fromAuth = (req as Request & { user?: { childId?: string } }).user?.childId;
-  const raw = fromAuth ?? req.query.childId ?? req.body?.childId;
-  if (typeof raw !== 'string' || !raw.trim() || raw.length > 64) {
-    throw new HttpError(400, 'CHILD_ID_REQUIRED', 'Thiếu hoặc sai childId');
-  }
-  return raw.trim();
-}
 
 export function createPetController(service: PetService) {
   return {
-    /** GET /api/pet?childId= → { pet: PetDTO | null } (null = bé chưa chọn loài) */
+    /** GET /api/pet/config → các con số của pet (EXP, lượt ăn, giá XP, danh sách loài) */
+    getConfig: asyncHandler(async (_req, res) => {
+      res.json({ config: service.getConfig() });
+    }),
+
+    /** GET /api/pet?childId= → { pet: PetDTO | null, xpBalance } (pet null = bé chưa chọn loài) */
     getPet: asyncHandler(async (req, res) => {
-      res.json({ pet: await service.getPet(getChildId(req)) });
+      const childId = await resolveChildId(req);
+      const [pet, xpBalance] = await Promise.all([service.getPet(childId), service.getXpBalance(childId)]);
+      res.json({ pet, xpBalance });
     }),
 
     /** POST /api/pet { childId, speciesId } → 201 { pet } */
     createPet: asyncHandler(async (req, res) => {
-      const pet = await service.createPet(getChildId(req), req.body?.speciesId);
+      const pet = await service.createPet(await resolveChildId(req), req.body?.speciesId);
       res.status(201).json({ pet });
     }),
 
     /** POST /api/pet/feed { childId } → { pet, result } */
     feedPet: asyncHandler(async (req, res) => {
-      res.json(await service.feedPet(getChildId(req)));
-    }),
-
-    /** DELETE /api/pet?childId= → 204 */
-    deletePet: asyncHandler(async (req, res) => {
-      const deleted = await service.deletePet(getChildId(req));
-      if (!deleted) throw new HttpError(404, 'PET_NOT_FOUND', 'Bé chưa chọn thú cưng');
-      res.status(204).end();
+      res.json(await service.feedPet(await resolveChildId(req)));
     }),
   };
 }
