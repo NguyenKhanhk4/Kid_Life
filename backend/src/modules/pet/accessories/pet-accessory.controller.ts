@@ -1,9 +1,10 @@
 import type { Request, Response } from 'express';
 import { HttpError, asyncHandler } from '../../../shared/http';
 import { successResponse } from '../../../utils/responseHelper';
-import { resolveChildId } from '../pet.access';
+import { resolveChildId } from '../../../shared/childAccess';
 import type { PetAccessoryService } from './pet-accessory.service';
-import { accessoryActionSchema, accessoryInputSchema, parseBody } from './pet-accessory.validation';
+import { parseBody } from '../../../shared/parseBody';
+import { accessoryActionSchema, accessoryInputSchema } from './pet-accessory.validation';
 
 export function createPetAccessoryController(service: PetAccessoryService) {
   const action = (run: (childId: string, accessoryId: string) => Promise<unknown>) =>

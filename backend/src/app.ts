@@ -8,11 +8,15 @@ import { createPetRouter } from './modules/pet/pet.routes';
 import { WalletXpService, type ChildXpService } from './modules/pet/pet.xp';
 import { PetAccessoryService } from './modules/pet/accessories/pet-accessory.service';
 import { createPetAccessoryAdminRouter } from './modules/pet/accessories/pet-accessory.routes';
+import { AiSkillReportService } from './modules/reports/ai-skill.service';
+import { createReportRouter } from './modules/reports/ai-skill.routes';
+import { MissionTaskService, type ITaskService } from './modules/reports/ai-skill.task';
 
 import { errorHandler, notFoundHandler } from './shared/http';
 
 export interface AppDeps {
   xpService?: ChildXpService;
+  taskService?: ITaskService;
   now?: () => Date;
 }
 
@@ -37,6 +41,10 @@ export function createApp(deps: AppDeps = {}) {
   app.use('/api/pet', createPetRouter(petService, accessoryService));
   // Admin quản lý danh mục phụ kiện (mount trước /api/admin của server.ts)
   app.use('/api/admin/master-data/accessories', createPetAccessoryAdminRouter(accessoryService));
+
+  // Báo cáo kỹ năng (radar 4 chỉ số) cho phụ huynh
+  const reportService = new AiSkillReportService(deps.taskService ?? new MissionTaskService(), env.tzOffsetMinutes, deps.now);
+  app.use('/api/reports', createReportRouter(reportService));
 
   return { app, registerErrorHandlers };
 

@@ -3,10 +3,10 @@
  *   npm run seed:pet
  *
  * Tài khoản phụ huynh: pet.tester@kidlife.vn / Pet@12345
- *   - Bé Na  (PIN 1234): 500 XP, Mèo stage 2, cho ăn lần cuối hôm qua (streak 5), có sẵn Mũ ảo thuật (đang mặc) + Kính râm
+ *   - Bé Na  (PIN 1234): 500 XP, Mèo stage 2, cho ăn lần cuối hôm qua (streak 5), có sẵn Mũ phớt + Cánh thiên thần (đang đeo) + Kính mắt mèo
  *   - Bé Tí  (PIN 5678): 300 XP, CHƯA có pet → test màn chọn loài
  *   - Bé Bin (PIN 1111):   5 XP, Rồng stage 3 → test lỗi "không đủ XP"
- * + 9 phụ kiện thú cưng (mũ, kính, vương miện, khăn/nơ) cho tủ đồ.
+ * + 81 phụ kiện thú cưng (8 loại, ảnh trong web/public/assets/pets/accessories) cho tủ đồ.
  * Chỉ đụng tới tài khoản test này, không sửa dữ liệu của người dùng khác.
  */
 import bcrypt from 'bcryptjs';
@@ -18,24 +18,71 @@ import Child from './src/modules/children/children.model';
 import Wallet from './src/modules/wallets/wallet.model';
 import WalletTransaction from './src/modules/wallets/wallet-transaction.model';
 import { PetModel } from './src/modules/pet/pet.model';
-import { ChildPetAccessory, PetAccessory } from './src/modules/pet/accessories/pet-accessory.model';
+import {
+  ACCESSORY_SLOT,
+  ChildPetAccessory,
+  PetAccessory,
+  type AccessoryCategory,
+} from './src/modules/pet/accessories/pet-accessory.model';
 
-/** Danh mục phụ kiện (upsert theo tên — không đụng phụ kiện admin tự thêm). */
-const ACCESSORIES = [
-  { name: 'Mũ ảo thuật', icon: '🎩', category: 'hat', cost_xp: 60, sort_order: 1 },
-  { name: 'Mũ lưỡi trai', icon: '🧢', category: 'hat', cost_xp: 40, sort_order: 2 },
-  { name: 'Mũ tốt nghiệp', icon: '🎓', category: 'hat', cost_xp: 90, sort_order: 3 },
-  { name: 'Kính râm', icon: '🕶️', category: 'glasses', cost_xp: 50, sort_order: 1 },
-  { name: 'Kính học giả', icon: '👓', category: 'glasses', cost_xp: 40, sort_order: 2 },
-  { name: 'Vương miện vàng', icon: '👑', category: 'crown', cost_xp: 150, sort_order: 1 },
-  { name: 'Vòng hoa', icon: '🌸', category: 'crown', cost_xp: 70, sort_order: 2 },
-  { name: 'Khăn quàng đỏ', icon: '🧣', category: 'cape', cost_xp: 60, sort_order: 1 },
-  { name: 'Nơ xinh', icon: '🎀', category: 'cape', cost_xp: 45, sort_order: 2 },
-] as const;
+/**
+ * Danh mục phụ kiện = ảnh trong web/public/assets/pets/accessories/<category>/<category>-NN.png
+ * (upsert theo đường dẫn ảnh — không đụng phụ kiện admin tự thêm). Mỗi dòng: [tên, giá XP].
+ * Chưa đưa vào: halo-05..10 và wings-05 — ảnh gốc vẽ hiệu ứng trong mờ lên nền caro, chưa tách sạch
+ * (xem accessories/README.md); có ảnh nền trong suốt thật thì thêm tên vào đây.
+ */
+const IMG = '/assets/pets/accessories';
+const CATALOG: Record<AccessoryCategory, [string, number][]> = {
+  hat: [
+    ['Mũ sinh nhật', 40], ['Mũ phù thủy', 70], ['Mũ thám tử', 60], ['Mũ nhung đỏ', 70], ['Mũ lưỡi trai', 40],
+    ['Bờm tuần lộc', 50], ['Mũ phớt', 60], ['Bờm tai gấu', 40], ['Bờm tai thỏ', 40], ['Nón lá', 50],
+    ['Mũ Noel', 50], ['Mũ hải tặc', 70], ['Mũ đầu bếp', 50], ['Mũ cao bồi', 60],
+  ],
+  crown: [
+    ['Vương miện vàng', 150], ['Vương miện kim cương', 160], ['Vương miện ngọc lục bảo', 140], ['Vương miện trái tim', 120],
+    ['Vương miện ngôi sao', 120], ['Vòng hoa', 70], ['Vương miện băng giá', 140], ['Mũ vua đỏ', 130],
+    ['Vương miện đêm sao', 150], ['Vương miện cỏ bốn lá', 110], ['Vương miện rừng xanh', 130], ['Vương miện cầu vồng', 120],
+  ],
+  halo: [['Hào quang vàng', 100], ['Hào quang cầu vồng', 110], ['Hào quang đêm sao', 110], ['Vòng hoa hào quang', 90]],
+  bow: [
+    ['Nơ hồng chấm bi', 30], ['Nơ xanh dương', 30], ['Nơ kẹo sọc', 35], ['Nơ hoa nhí', 35], ['Nơ tím', 30],
+    ['Nơ cầu vồng', 40], ['Nơ bạc hà', 30], ['Nơ da báo', 35], ['Nơ dâu tây', 35], ['Nơ vàng kim', 40],
+    ['Nơ hồng phấn', 30], ['Nơ caro', 35],
+  ],
+  glasses: [
+    ['Kính tròn tím', 40], ['Kính mắt mèo', 50], ['Kính trái tim', 50], ['Kính phi công', 60], ['Kính ngôi sao', 50],
+    ['Kính vuông cam', 40], ['Kính cầu vồng', 55], ['Kính một mắt', 60], ['Kính 3D', 45], ['Kính bông hoa', 50],
+    ['Kính học giả', 40], ['Kính hồng xinh', 45],
+  ],
+  mask: [
+    ['Mặt nạ dạ hội', 60], ['Mặt nạ siêu anh hùng', 50], ['Mặt nạ ninja', 60], ['Bịt mắt hải tặc', 40],
+    ['Mặt nạ hoàng kim', 70], ['Mặt nạ cáo', 60], ['Mặt nạ khủng long', 60], ['Mặt nạ chú hề', 50],
+  ],
+  necklace: [
+    ['Dây chuyền hồng ngọc', 90], ['Vòng ngọc trai', 80], ['Dây chuyền trái tim', 70], ['Vòng cổ chuông', 40],
+    ['Dây chuyền ngôi sao', 70], ['Vòng hoa đeo cổ', 50], ['Vòng cổ khúc xương', 40], ['Dây chuyền đá quý', 100],
+    ['Dây chuyền hổ phách', 80], ['Dây chuyền đồng hồ', 90],
+  ],
+  wings: [
+    ['Cánh thiên thần', 150], ['Cánh bướm cam', 120], ['Cánh rồng xanh', 160], ['Cánh bướm cầu vồng', 140],
+    ['Cánh tiên pha lê', 150], ['Cánh quạ đen', 140], ['Cánh dơi tím', 130], ['Cánh tiên vàng', 140],
+    ['Cánh chim ưng', 140], ['Cánh cơ khí vàng', 180],
+  ],
+};
+const EXCLUDED = new Set(['halo/halo-05', 'halo/halo-06', 'halo/halo-07', 'halo/halo-08', 'halo/halo-09', 'halo/halo-10', 'wings/wings-05']);
 
-/** Phụ kiện bé đã có sẵn khi seed: [tên, đang mặc?] */
+const ACCESSORIES = (Object.entries(CATALOG) as [AccessoryCategory, [string, number][]][]).flatMap(([category, items]) =>
+  items
+    .map(([name, cost_xp], i) => {
+      const file = `${category}/${category}-${String(i + 1).padStart(2, '0')}`;
+      return { name, icon: `${IMG}/${file}.png`, category, cost_xp, sort_order: i + 1, file };
+    })
+    .filter((a) => !EXCLUDED.has(a.file)),
+);
+
+/** Phụ kiện bé đã có sẵn khi seed: [file ảnh, đang mặc?] */
 const OWNED: Record<string, [string, boolean][]> = {
-  'Bé Na': [['Mũ ảo thuật', true], ['Kính râm', false]],
+  'Bé Na': [['hat/hat-07', true], ['glasses/glasses-02', false], ['wings/wings-01', true]],
 };
 
 const PARENT = { email: 'pet.tester@kidlife.vn', password: 'Pet@12345', fullName: 'Phụ huynh test Pet' };
@@ -77,15 +124,20 @@ async function main() {
 
   await Promise.all([PetAccessory.syncIndexes(), ChildPetAccessory.syncIndexes()]);
   const accessoryIds = new Map<string, mongoose.Types.ObjectId>();
-  for (const a of ACCESSORIES) {
+  for (const { file, ...a } of ACCESSORIES) {
     const doc = await PetAccessory.findOneAndUpdate(
-      { name: a.name },
+      { icon: a.icon },
       { $set: { ...a, is_active: true } },
       { upsert: true, new: true },
     );
-    accessoryIds.set(a.name, doc._id as mongoose.Types.ObjectId);
+    accessoryIds.set(file, doc._id as mongoose.Types.ObjectId);
   }
-  console.log(`Danh mục phụ kiện: ${ACCESSORIES.length} món`);
+  // Ngừng bán các món seed cũ có ảnh không còn trong danh mục (bé đã mua vẫn giữ)
+  const stale = await PetAccessory.updateMany(
+    { icon: { $regex: `^${IMG}/`, $nin: ACCESSORIES.map((a) => a.icon) }, is_active: true },
+    { is_active: false },
+  );
+  console.log(`Danh mục phụ kiện: ${ACCESSORIES.length} món` + (stale.modifiedCount ? `, ngừng bán ${stale.modifiedCount} món cũ` : ''));
 
   const passwordHash = await bcrypt.hash(PARENT.password, 10);
   const parent = await User.findOneAndUpdate(
@@ -118,12 +170,13 @@ async function main() {
     await WalletTransaction.deleteMany({ child_id: child._id, type: /^pet_/ });
 
     await ChildPetAccessory.deleteMany({ child_id: child._id });
-    for (const [name, equipped] of OWNED[kid.name] ?? []) {
-      const accessory = ACCESSORIES.find((a) => a.name === name)!;
+    for (const [file, equipped] of OWNED[kid.name] ?? []) {
+      const accessory = ACCESSORIES.find((a) => a.file === file)!;
       await ChildPetAccessory.create({
         child_id: child._id,
-        accessory_id: accessoryIds.get(name),
+        accessory_id: accessoryIds.get(file),
         category: accessory.category,
+        slot: ACCESSORY_SLOT[accessory.category],
         is_equipped: equipped,
       });
     }

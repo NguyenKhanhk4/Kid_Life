@@ -7,7 +7,10 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "pets:fix-bg": "node scripts/pets/fix-backgrounds.mjs"
+    "pets:fix-bg": "node scripts/pets/fix-backgrounds.mjs",
+    "pets:fix-accessories": "node scripts/pets/fix-accessory-backgrounds.mjs",
+    "pets:anchors": "node scripts/pets/compute-accessory-anchors.mjs",
+    "pets:preview-accessories": "node scripts/pets/preview-accessories.mjs"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.12.0",

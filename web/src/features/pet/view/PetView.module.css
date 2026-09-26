@@ -66,20 +66,18 @@
 }
 
 /* ═══ Mí mắt (vị trí trong eyes.data.json) ═══ */
+/* thứ tự lớp theo DOM: cánh (trước ảnh pet) → ảnh pet → mí mắt → phụ kiện phía trước */
 .accessory {
   position: absolute;
-  aspect-ratio: 1 / 1;
-  display: grid;
-  place-items: center;
   line-height: 1;
+  text-align: center;
   pointer-events: none;
-  z-index: 2;
 }
 
 .accessory img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  height: auto;
 }
 
 .eye {

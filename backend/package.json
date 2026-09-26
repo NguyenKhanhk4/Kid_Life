@@ -8,6 +8,7 @@
     "build": "tsc",
     "lint": "eslint . --ext .ts",
     "seed:pet": "node --require ts-node/register/transpile-only seed_pet.ts",
+    "seed:reports": "node --require ts-node/register/transpile-only seed_reports.ts",
     "test":"node --require ts-node/register/transpile-only --test \"src/**/*.test.ts\""
   },
   "dependencies": {

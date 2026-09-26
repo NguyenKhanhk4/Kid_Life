@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/modules/auth/AuthContext';
-import { pickActiveChild } from '@/shared/utils/activeChild';
+import { ACTIVE_CHILD_EVENT, pickActiveChild } from '@/shared/utils/activeChild';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -15,9 +15,13 @@ export interface ActiveChild {
 
 export type ActiveChildStatus = 'loading' | 'ready' | 'no-auth' | 'no-child' | 'error';
 
-/** Bé đang dùng chế độ "Bé" (lấy thật từ /api/children của tài khoản phụ huynh đang đăng nhập). */
+/**
+ * Bé đang được chọn (lấy thật từ /api/children của tài khoản đang đăng nhập).
+ * Tự đổi theo khi bé đăng nhập PIN hoặc phụ huynh chọn bé khác ở ChildPicker.
+ */
 export function useActiveChild() {
   const { token, isLoading: authLoading } = useAuth();
+  const [children, setChildren] = useState<ActiveChild[]>([]);
   const [child, setChild] = useState<ActiveChild | null>(null);
   const [status, setStatus] = useState<ActiveChildStatus>('loading');
 
@@ -35,7 +39,9 @@ export function useActiveChild() {
       .then((json) => {
         if (cancelled) return;
         if (!json.success) throw new Error(json.error?.message);
-        const picked = pickActiveChild<ActiveChild>(json.data ?? []);
+        const list: ActiveChild[] = json.data ?? [];
+        const picked = pickActiveChild(list);
+        setChildren(list);
         setChild(picked);
         setStatus(picked ? 'ready' : 'no-child');
       })
@@ -46,6 +52,15 @@ export function useActiveChild() {
       cancelled = true;
     };
   }, [token, authLoading]);
+
+  useEffect(() => {
+    const onChange = () => {
+      const picked = pickActiveChild(children);
+      if (picked) setChild(picked);
+    };
+    window.addEventListener(ACTIVE_CHILD_EVENT, onChange);
+    return () => window.removeEventListener(ACTIVE_CHILD_EVENT, onChange);
+  }, [children]);
 
   return { child, status, token };
 }

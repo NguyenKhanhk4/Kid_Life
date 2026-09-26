@@ -1,38 +1,65 @@
 import { useState } from 'react';
-import { MOCK_KIDLIFE_DATA } from '@/shared/constants/kidlifeMockData';
-import { IoSparkles, IoInformationCircleOutline } from 'react-icons/io5';
+import { AnimatePresence, motion } from 'framer-motion';
+import { IoSparkles, IoInformationCircleOutline, IoChevronBack, IoChevronForward } from 'react-icons/io5';
+import { RadarChart } from '@/features/ai-skill/components/RadarChart';
+import { useAiSkillReport } from '@/features/ai-skill/useAiSkillReport';
+import type { SkillAxis, SkillKey } from '@/features/ai-skill/types';
 
-const D = MOCK_KIDLIFE_DATA;
+const SKILL_STYLE: Record<SkillKey, { icon: string; color: string; desc: string }> = {
+  tu_lap: { icon: '🏠', color: '#2B44E8', desc: 'Việc nhà, kỹ năng & việc khác' },
+  suc_khoe: { icon: '💪', color: '#FF4785', desc: 'Nhiệm vụ vận động, thể chất' },
+  tri_tue: { icon: '🧠', color: '#8E54E9', desc: 'Nhiệm vụ học tập & bài kiểm tra' },
+  chuyen_can: { icon: '🔥', color: '#FF8A00', desc: 'Ngày có làm nhiệm vụ hoặc chăm thú cưng' },
+};
+
+const CATEGORY_LABEL: Record<string, string> = {
+  hoc_tap: 'Học tập',
+  nha_cua: 'Nhà cửa',
+  the_chat: 'Thể chất',
+  ky_nang: 'Kỹ năng',
+  khac: 'Khác',
+};
+
+/** "2026-09" ± n tháng */
+function shiftMonth(period: string, delta: number) {
+  const [y, m] = period.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+const thisMonth = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+const monthLabel = (period: string) => {
+  const [y, m] = period.split('-');
+  return `tháng ${Number(m)}/${y}`;
+};
+
+function Delta({ axis }: { axis: SkillAxis }) {
+  if (axis.deltaPercent === null) {
+    return <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--kl-muted)' }} title="Chưa có tháng trước để so sánh">—</span>;
+  }
+  const up = axis.deltaPercent >= 0;
+  return (
+    <span style={{ fontSize: 12, fontWeight: 800, color: up ? 'var(--kl-green)' : 'var(--kl-pink)' }}>
+      {up ? '▲' : '▼'} {up ? '+' : ''}
+      {axis.deltaPercent}%
+    </span>
+  );
+}
 
 export default function ParentAiAnalyticsPage() {
-  const [taskApplied, setTaskApplied] = useState(false);
+  /** undefined = tháng hiện tại */
+  const [month, setMonth] = useState<string | undefined>(undefined);
+  const { child, childStatus, report, loading, error, applying, notice, reload, applyTask } = useAiSkillReport(month);
 
-  // Radar chart SVG calculation (4 axes: Tự lập (top), Sức khỏe (right), Trí tuệ (bottom), Tình cảm (left))
-  const values = [85, 45, 72, 90];
-  const center = 140;
-  const radius = 100;
+  if (childStatus === 'no-auth') return <div className="kl-card" style={{ padding: 28 }}>Vui lòng đăng nhập để xem báo cáo.</div>;
+  if (childStatus === 'no-child') {
+    return <div className="kl-card" style={{ padding: 28 }}>Chưa có hồ sơ bé nào. Hãy tạo hồ sơ bé ở mục Tài khoản trước nhé.</div>;
+  }
 
-  const getPoint = (val: number, angleDeg: number) => {
-    const angleRad = (angleDeg - 90) * (Math.PI / 180);
-    const r = (val / 100) * radius;
-    const x = center + r * Math.cos(angleRad);
-    const y = center + r * Math.sin(angleRad);
-    return `${x},${y}`;
-  };
-
-  const polyPoints = [
-    getPoint(values[0], 0),
-    getPoint(values[1], 90),
-    getPoint(values[2], 180),
-    getPoint(values[3], 270),
-  ].join(' ');
-
-  const handleApplyAiTask = () => {
-    setTaskApplied(true);
-    setTimeout(() => {
-      alert('Đã tự động tạo & phát hành nhiệm vụ "Đánh răng & Ngủ trước 21h" (+50 XP) thành công sang ứng dụng của bé Minh Anh! 🚀');
-    }, 500);
-  };
+  const viewing = report?.monthPeriod;
+  const isCurrent = !month;
 
   return (
     <div>
@@ -41,171 +68,181 @@ export default function ParentAiAnalyticsPage() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <IoSparkles color="var(--kl-purple)" size={20} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--kl-purple)' }}>Báo cáo trí tuệ nhân tạo</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--kl-purple)' }}>Báo cáo phát triển kỹ năng</span>
           </div>
-          <h1>Báo Cáo Phân Tích Kỹ Năng AI 📊</h1>
-          <p className="page-subtitle">Phân tích đa chiều sự phát triển toàn diện của bé Minh Anh</p>
+          <h1>Báo Cáo Phân Tích Kỹ Năng 📊</h1>
+          <p className="page-subtitle">Phân tích 4 chỉ số phát triển của bé {child?.name ?? '...'} từ hoạt động thật trong tháng</p>
         </div>
-        <span className="kl-badge" style={{ background: '#F0E8FF', color: 'var(--kl-purple)', fontSize: 13, padding: '8px 16px' }}>
-          ✨ AI Cập nhật: Hôm nay, 08:00
-        </span>
+        {report && (
+          <span className="kl-badge" style={{ background: '#F0E8FF', color: 'var(--kl-purple)', fontSize: 13, padding: '8px 16px' }}>
+            Cập nhật: {new Date(report.updatedAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+          </span>
+        )}
       </div>
 
-      <div className="web-grid-2-1" style={{ marginBottom: 24 }}>
-        {/* Left: Radar Chart & Metrics */}
-        <div className="kl-card" style={{ padding: 28, borderRadius: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--kl-primary-dark)' }}>
-              Biểu đồ Radar 4 Chỉ Số Cốt Lõi
-            </h2>
-            <span style={{ fontSize: 12, color: 'var(--kl-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <IoInformationCircleOutline size={16} /> Chu kỳ tháng 9/2026
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px 0 24px' }}>
-            {/* SVG Radar Chart */}
-            <div style={{ position: 'relative', width: 280, height: 280 }}>
-              <svg width="280" height="280" viewBox="0 0 280 280">
-                {/* Concentric Grid Circles */}
-                {[0.25, 0.5, 0.75, 1].map((scale, idx) => (
-                  <polygon
-                    key={idx}
-                    points={[
-                      `${center},${center - radius * scale}`,
-                      `${center + radius * scale},${center}`,
-                      `${center},${center + radius * scale}`,
-                      `${center - radius * scale},${center}`,
-                    ].join(' ')}
-                    fill="none"
-                    stroke="#E8EDFC"
-                    strokeWidth="1.5"
-                  />
-                ))}
-
-                {/* Axes Lines */}
-                <line x1={center} y1={center - radius} x2={center} y2={center + radius} stroke="#D5DEFA" strokeWidth="1.5" />
-                <line x1={center - radius} y1={center} x2={center + radius} y2={center} stroke="#D5DEFA" strokeWidth="1.5" />
-
-                {/* Filled Radar Area */}
-                <polygon
-                  points={polyPoints}
-                  fill="rgba(43, 68, 232, 0.25)"
-                  stroke="var(--kl-primary)"
-                  strokeWidth="3"
-                />
-
-                {/* Data Points */}
-                {[
-                  { x: center, y: center - (values[0] / 100) * radius },
-                  { x: center + (values[1] / 100) * radius, y: center },
-                  { x: center, y: center + (values[2] / 100) * radius },
-                  { x: center - (values[3] / 100) * radius, y: center },
-                ].map((pt, i) => (
-                  <circle key={i} cx={pt.x} cy={pt.y} r="5" fill="var(--kl-primary)" stroke="#fff" strokeWidth="2" />
-                ))}
-
-                {/* Axis Labels */}
-                <text x={center} y={center - radius - 12} textAnchor="middle" fill="#2B44E8" fontWeight="800" fontSize="13">🏠 Tự lập (85%)</text>
-                <text x={center + radius + 14} y={center + 4} textAnchor="start" fill="#FF4785" fontWeight="800" fontSize="13">💪 Sức khỏe (45%)</text>
-                <text x={center} y={center + radius + 22} textAnchor="middle" fill="#8E54E9" fontWeight="800" fontSize="13">🧠 Trí tuệ (72%)</text>
-                <text x={center - radius - 14} y={center + 4} textAnchor="end" fill="#FF6B9D" fontWeight="800" fontSize="13">💖 Tình cảm (90%)</text>
-              </svg>
-            </div>
-
-            {/* Indicator Details Table */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%' }}>
-              {D.skills.map((s) => {
-                const diff = s.value - s.prev;
-                const isPos = diff >= 0;
-                return (
-                  <div key={s.key} style={{ padding: 14, borderRadius: 16, background: '#F8F9FD', border: '1px solid #E8EDFC' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: s.color }}>{s.icon} {s.name}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: isPos ? 'var(--kl-green)' : 'var(--kl-pink)' }}>
-                        {isPos ? `+${diff}%` : `${diff}%`}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--kl-primary-dark)', margin: '4px 0' }}>
-                      {s.value}%
-                    </div>
-                    <span style={{ fontSize: 11, color: 'var(--kl-muted)' }}>{s.desc}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: AI Recommendation Box */}
-        <div style={{ display: 'grid', gap: 20 }}>
-          <div
+      <AnimatePresence>
+        {notice && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
             className="kl-card"
-            style={{
-              padding: 24,
-              borderRadius: 24,
-              background: 'linear-gradient(135deg, #FAF7FF 0%, #F3ECFF 100%)',
-              border: '2px solid rgba(142, 84, 233, 0.2)',
-            }}
+            style={{ padding: '12px 16px', marginBottom: 16, background: '#F0FDF4', border: '1px solid #BBF7D0', fontWeight: 700, color: '#166534' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 22, background: 'var(--kl-purple)', display: 'grid', placeItems: 'center', color: '#fff', fontSize: 22 }}>
-                <IoSparkles />
-              </div>
-              <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--kl-purple-dark)' }}>Khuyến Nghị Giáo Dục AI</h3>
-                <span style={{ fontSize: 12, color: 'var(--kl-muted)' }}>Phát hiện bởi KidLife AI Engine</span>
+            {notice}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {error && !report && (
+        <div className="kl-card" style={{ padding: 24, marginBottom: 16 }}>
+          Không tải được báo cáo: {error}{' '}
+          <button className="kl-btn kl-btn-primary kl-btn-sm" onClick={() => void reload()}>Thử lại</button>
+        </div>
+      )}
+
+      {(loading && !report) ? (
+        <div className="kl-card" style={{ padding: 28, textAlign: 'center', color: 'var(--kl-muted)' }}>Đang phân tích hoạt động của bé… 📊</div>
+      ) : report && (
+        <div className="web-grid-2-1" style={{ marginBottom: 24 }}>
+          {/* Left: Radar Chart & Metrics */}
+          <div className="kl-card" style={{ padding: 28, borderRadius: 24, opacity: loading ? 0.6 : 1, transition: 'opacity .2s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--kl-primary-dark)' }}>Biểu đồ Radar 4 Chỉ Số Cốt Lõi</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: 'var(--kl-muted)' }}>
+                <button
+                  className="kl-btn kl-btn-sm"
+                  aria-label="Tháng trước"
+                  onClick={() => setMonth(shiftMonth(viewing!, -1))}
+                  style={{ padding: '4px 8px' }}
+                >
+                  <IoChevronBack />
+                </button>
+                <span>Chu kỳ {monthLabel(viewing!)}</span>
+                <button
+                  className="kl-btn kl-btn-sm"
+                  aria-label="Tháng sau"
+                  disabled={isCurrent}
+                  onClick={() => {
+                    const next = shiftMonth(viewing!, 1);
+                    setMonth(next >= thisMonth() ? undefined : next); // tới tháng hiện tại → báo cáo đang diễn ra
+                  }}
+                  style={{ padding: '4px 8px', opacity: isCurrent ? 0.4 : 1 }}
+                >
+                  <IoChevronForward />
+                </button>
               </div>
             </div>
 
-            <div style={{ background: '#fff', padding: 16, borderRadius: 16, marginBottom: 18, border: '1px solid #EAE0F8' }}>
-              <p style={{ fontSize: 14, color: '#4A3B66', lineHeight: 1.6, margin: 0 }}>
-                💡 <b>Nhận xét tháng 9:</b> Bé Minh Anh phát triển vượt bậc về <b>Tình cảm (90%)</b> và <b>Tự lập (85%)</b>.
-                Tuy nhiên chỉ số <b>Sức khỏe giảm 17%</b> so với tháng trước do có 3 đêm bé đi ngủ sau 21h30.
-              </p>
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '4px 0 20px' }}>
+              <RadarChart
+                key={`${report.childId}-${report.monthPeriod}`}
+                axes={report.axes.map((a) => ({
+                  label: `${SKILL_STYLE[a.key].icon} ${a.label}`,
+                  value: a.score,
+                  color: SKILL_STYLE[a.key].color,
+                }))}
+              />
             </div>
 
-            <div style={{ background: 'rgba(255,71,133,0.08)', padding: 16, borderRadius: 16, marginBottom: 20 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: '#D81B60', display: 'block', marginBottom: 6 }}>
-                🎯 Nhiệm vụ AI gợi ý bổ sung ngay:
-              </span>
-              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--kl-text)' }}>
-                "Đánh răng sạch sẽ & Ngủ trước 21:00 tối"
-              </div>
-              <span style={{ fontSize: 12, color: 'var(--kl-muted)' }}>Thưởng: +50 XP • Giúp cải thiện +15% chỉ số Sức khỏe</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%' }}>
+              {report.axes.map((a) => (
+                <div key={a.key} style={{ padding: 14, borderRadius: 16, background: '#F8F9FD', border: '1px solid #E8EDFC' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: SKILL_STYLE[a.key].color }}>
+                      {SKILL_STYLE[a.key].icon} {a.label}
+                    </span>
+                    <Delta axis={a} />
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--kl-primary-dark)', margin: '4px 0' }}>{a.score}%</div>
+                  <span style={{ fontSize: 11, color: 'var(--kl-muted)' }}>
+                    {a.activities} {a.key === 'chuyen_can' ? 'ngày' : 'hoạt động'} • {SKILL_STYLE[a.key].desc}
+                    {a.previousScore !== null && ` • tháng trước ${a.previousScore}%`}
+                  </span>
+                </div>
+              ))}
             </div>
-
-            <button
-              onClick={handleApplyAiTask}
-              className="kl-btn kl-btn-block"
-              style={{
-                background: taskApplied ? 'var(--kl-green)' : 'var(--kl-purple)',
-                color: '#fff',
-                padding: '14px 20px',
-                fontSize: 15,
-                fontWeight: 800,
-                borderRadius: 18,
-                boxShadow: '0 6px 16px rgba(142, 84, 233, 0.3)',
-              }}
-              disabled={taskApplied}
-            >
-              {taskApplied ? '✅ Đã áp dụng nhiệm vụ cho bé' : '🚀 Áp dụng gợi ý nhiệm vụ AI'}
-            </button>
           </div>
 
-          {/* AI Insights Card */}
-          <div className="kl-card" style={{ padding: 20, borderRadius: 20 }}>
-            <h4 style={{ fontSize: 15, fontWeight: 800, color: 'var(--kl-primary-dark)', marginBottom: 12 }}>
-              📈 Xu Hướng Phát Triển Mới
-            </h4>
-            <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, color: 'var(--kl-muted)', display: 'grid', gap: 10 }}>
-              <li>Thói quen dọn dẹp phòng khách đã đi vào nếp (đạt chuỗi 11 ngày).</li>
-              <li>Bé phản ứng tốt với các phần thưởng trải nghiệm gia đình.</li>
-              <li>Khuyên ba mẹ tiếp tục duy trì khen ngợi để nuôi dưỡng sự tự tin.</li>
-            </ul>
+          {/* Right: Recommendation Box */}
+          <div style={{ display: 'grid', gap: 20, alignContent: 'start' }}>
+            <motion.div
+              key={report.reportId}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="kl-card"
+              style={{
+                padding: 24,
+                borderRadius: 24,
+                background: 'linear-gradient(135deg, #FAF7FF 0%, #F3ECFF 100%)',
+                border: '2px solid rgba(142, 84, 233, 0.2)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 22, background: 'var(--kl-purple)', display: 'grid', placeItems: 'center', color: '#fff', fontSize: 22 }}>
+                  <IoSparkles />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--kl-purple-dark)' }}>Khuyến Nghị Giáo Dục</h3>
+                  <span style={{ fontSize: 12, color: 'var(--kl-muted)' }}>
+                    {report.generatedBy === 'llm' ? 'Sinh bởi AI' : 'Gợi ý tự động từ dữ liệu hoạt động của bé'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ background: '#fff', padding: 16, borderRadius: 16, marginBottom: 18, border: '1px solid #EAE0F8' }}>
+                <p style={{ fontSize: 14, color: '#4A3B66', lineHeight: 1.6, margin: 0 }}>💡 {report.recommendation}</p>
+              </div>
+
+              <div style={{ background: 'rgba(255,71,133,0.08)', padding: 16, borderRadius: 16, marginBottom: 20 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#D81B60', display: 'block', marginBottom: 6 }}>
+                  🎯 Nhiệm vụ gợi ý bổ sung:
+                </span>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--kl-text)' }}>"{report.suggestedTask.title}"</div>
+                {report.suggestedTask.description && (
+                  <div style={{ fontSize: 13, color: 'var(--kl-muted)', margin: '4px 0' }}>{report.suggestedTask.description}</div>
+                )}
+                <span style={{ fontSize: 12, color: 'var(--kl-muted)' }}>
+                  Thưởng: +{report.suggestedTask.reward_xp} XP • Loại: {CATEGORY_LABEL[report.suggestedTask.category] ?? report.suggestedTask.category}
+                </span>
+              </div>
+
+              <motion.button
+                whileTap={report.isTaskApplied || applying ? undefined : { scale: 0.95 }}
+                onClick={() => void applyTask()}
+                className="kl-btn kl-btn-block"
+                style={{
+                  background: report.isTaskApplied ? 'var(--kl-green)' : 'var(--kl-purple)',
+                  color: '#fff',
+                  padding: '14px 20px',
+                  fontSize: 15,
+                  fontWeight: 800,
+                  borderRadius: 18,
+                  boxShadow: '0 6px 16px rgba(142, 84, 233, 0.3)',
+                  opacity: applying ? 0.7 : 1,
+                }}
+                disabled={report.isTaskApplied || applying}
+              >
+                {report.isTaskApplied ? 'Đã áp dụng ✓' : applying ? 'Đang giao nhiệm vụ…' : '🚀 Áp dụng gợi ý nhiệm vụ'}
+              </motion.button>
+            </motion.div>
+
+            {/* Cách tính điểm (minh bạch cho phụ huynh) */}
+            <div className="kl-card" style={{ padding: 20, borderRadius: 20 }}>
+              <h4 style={{ fontSize: 15, fontWeight: 800, color: 'var(--kl-primary-dark)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <IoInformationCircleOutline size={18} /> Cách tính điểm
+              </h4>
+              <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, color: 'var(--kl-muted)', display: 'grid', gap: 8 }}>
+                <li>Điểm tính từ hoạt động thật của bé (nhiệm vụ đã được duyệt) so với mục tiêu tháng.</li>
+                <li>Tự lập: 16 nhiệm vụ nhà cửa/kỹ năng/khác • Sức khỏe: 12 nhiệm vụ thể chất • Trí tuệ: 12 nhiệm vụ học tập.</li>
+                <li>Chuyên cần: số ngày bé có hoạt động (nhiệm vụ được duyệt hoặc chăm thú cưng) / số ngày đã qua, trừ 10 điểm mỗi lần bị phạt.</li>
+                <li>Tháng đang diễn ra: mục tiêu tính theo số ngày đã qua.</li>
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

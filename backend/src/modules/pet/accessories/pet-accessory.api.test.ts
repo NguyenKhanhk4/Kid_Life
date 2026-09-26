@@ -66,10 +66,10 @@ describe('API /api/pet/accessories', () => {
 
   it('admin tạo phụ kiện; phụ huynh không gọi được API admin; dữ liệu sai → 400', async () => {
     const items = [
-      ['magicHat', 'Mũ ảo thuật', '🎩', 'hat', 60],
-      ['cap', 'Mũ lưỡi trai', '🧢', 'hat', 40],
-      ['sunglasses', 'Kính râm', '🕶️', 'glasses', 50],
-      ['crown', 'Vương miện', '👑', 'crown', 500],
+      ['magicHat', 'Mũ ảo thuật', '/assets/pets/accessories/hat/magic-hat.png', 'hat', 60],
+      ['cap', 'Mũ lưỡi trai', '/assets/pets/accessories/hat/cap.png', 'hat', 40],
+      ['sunglasses', 'Kính râm', '/assets/pets/accessories/glasses/sunglasses.png', 'glasses', 50],
+      ['crown', 'Vương miện', 'https://cdn.example.com/crown.webp', 'crown', 500],
     ] as const;
     for (const [key, name, icon, category, priceXP] of items) {
       const r = await call('POST', '/api/admin/master-data/accessories', { name, icon, category, priceXP }, adminToken);
@@ -81,6 +81,9 @@ describe('API /api/pet/accessories', () => {
     const bad = await call('POST', '/api/admin/master-data/accessories', { name: 'X', icon: '?', category: 'shoes', priceXP: 1 }, adminToken);
     assert.equal(bad.status, 400);
     assert.equal(bad.body.error.code, 'VALIDATION_ERROR');
+    // icon phải là đường dẫn ảnh, không nhận emoji
+    const emoji = await call('POST', '/api/admin/master-data/accessories', { name: 'X', icon: '🎩', category: 'hat', priceXP: 1 }, adminToken);
+    assert.equal(emoji.status, 400);
   });
 
   it('bé xem tủ đồ: chưa sở hữu gì, kèm XP thật; bé nhà khác → 403', async () => {
@@ -126,7 +129,7 @@ describe('API /api/pet/accessories', () => {
     assert.equal(find(r.body.accessories, acc.cap).isEquipped, true);
     assert.equal(find(r.body.accessories, acc.magicHat).isEquipped, false);
     assert.equal(find(r.body.accessories, acc.sunglasses).isEquipped, true);
-    assert.equal(await ChildPetAccessory.countDocuments({ child_id: kid, category: 'hat', is_equipped: true }), 1);
+    assert.equal(await ChildPetAccessory.countDocuments({ child_id: kid, slot: 'head', is_equipped: true }), 1);
   });
 
   it('mặc song song 2 mũ → DB vẫn chỉ còn 1 mũ đang mặc', async () => {
@@ -134,7 +137,18 @@ describe('API /api/pet/accessories', () => {
       call('POST', '/api/pet/accessories/equip', { childId: kid, accessoryId: acc.magicHat }),
       call('POST', '/api/pet/accessories/equip', { childId: kid, accessoryId: acc.cap }),
     ]);
-    assert.equal(await ChildPetAccessory.countDocuments({ child_id: kid, category: 'hat', is_equipped: true }), 1);
+    assert.equal(await ChildPetAccessory.countDocuments({ child_id: kid, slot: 'head', is_equipped: true }), 1);
+  });
+
+  it('cùng vị trí đeo (mũ ↔ vương miện) chỉ đeo 1 món; kính vẫn giữ nguyên', async () => {
+    const created = await call('POST', '/api/admin/master-data/accessories', { name: 'Vòng hoa', icon: '/assets/pets/accessories/crown/crown-06.png', category: 'crown', priceXP: 0 }, adminToken);
+    acc.wreath = created.body.data._id;
+    await call('POST', '/api/pet/accessories/buy', { childId: kid, accessoryId: acc.wreath });
+    const r = await call('POST', '/api/pet/accessories/equip', { childId: kid, accessoryId: acc.wreath });
+    assert.equal(find(r.body.accessories, acc.wreath).isEquipped, true);
+    assert.equal(find(r.body.accessories, acc.cap).isEquipped, false);
+    assert.equal(find(r.body.accessories, acc.magicHat).isEquipped, false);
+    assert.equal(find(r.body.accessories, acc.sunglasses).isEquipped, true);
   });
 
   it('tháo phụ kiện', async () => {
@@ -147,7 +161,7 @@ describe('API /api/pet/accessories', () => {
     assert.equal((await call('DELETE', `/api/admin/master-data/accessories/${acc.sunglasses}`, undefined, adminToken)).status, 200);
     assert.equal((await call('DELETE', `/api/admin/master-data/accessories/${acc.crown}`, undefined, adminToken)).status, 200);
     const admin = await call('GET', '/api/admin/master-data/accessories', undefined, adminToken);
-    assert.equal(admin.body.data.length, 2);
+    assert.equal(admin.body.data.length, 3);
     const wardrobe = await call('GET', `/api/pet/accessories?childId=${kid}`);
     const ids = wardrobe.body.accessories.map((a: { id: string }) => a.id);
     assert.ok(ids.includes(acc.sunglasses)); // đã mua → vẫn thấy

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { accessoryApi } from '../api/accessoryApi';
 import type { Accessory, AccessoryCategory, Wardrobe, WornAccessories } from '../types';
+import { ACCESSORY_SLOT } from '../view/accessoryLayout';
 
 interface Options {
   token: string | null;
@@ -77,8 +78,16 @@ export function usePetWardrobe({ token, childId, onXpBalance }: Options) {
     [token, childId, apply],
   );
 
+  /** Mặc thử: mỗi vị trí đeo chỉ thử 1 món (thử vương miện thì bỏ mũ đang thử) */
   const tryOn = useCallback((acc: Accessory) => {
-    setPreview((p) => ({ ...p, [acc.category]: acc.id }));
+    setPreview((p) => {
+      const next = { ...p };
+      for (const c of Object.keys(next) as AccessoryCategory[]) {
+        if (ACCESSORY_SLOT[c] === ACCESSORY_SLOT[acc.category]) delete next[c];
+      }
+      next[acc.category] = acc.id;
+      return next;
+    });
   }, []);
 
   const cancelTryOn = useCallback((category: AccessoryCategory) => clearPreview(category), []);
@@ -104,14 +113,16 @@ export function usePetWardrobe({ token, childId, onXpBalance }: Options) {
     [run],
   );
 
-  /** Món đang hiện trên pet: ưu tiên món đang mặc thử, không thì món đã mặc */
+  /** Món đang hiện trên pet: mỗi vị trí đeo 1 món, ưu tiên món đang mặc thử, không thì món đã mặc */
   const worn = useMemo<WornAccessories>(() => {
-    const out: WornAccessories = {};
-    for (const a of accessories) if (a.isEquipped) out[a.category] = a;
-    for (const [category, id] of Object.entries(preview) as [AccessoryCategory, string][]) {
+    const bySlot = new Map<string, Accessory>();
+    for (const a of accessories) if (a.isEquipped) bySlot.set(ACCESSORY_SLOT[a.category], a);
+    for (const id of Object.values(preview)) {
       const a = accessories.find((x) => x.id === id);
-      if (a) out[category] = a;
+      if (a) bySlot.set(ACCESSORY_SLOT[a.category], a);
     }
+    const out: WornAccessories = {};
+    for (const a of bySlot.values()) out[a.category] = a;
     return out;
   }, [accessories, preview]);
 

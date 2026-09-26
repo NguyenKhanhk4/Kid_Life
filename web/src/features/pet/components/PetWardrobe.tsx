@@ -1,14 +1,18 @@
 import { useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { isImageIcon } from '../view/accessory.config';
+import { AccessoryImage } from '../view/AccessoryImage';
 import type { Accessory, AccessoryCategory } from '../types';
 import styles from './PetWardrobe.module.css';
 
 export const CATEGORY_LABEL: Record<AccessoryCategory, string> = {
   hat: '🎩 Mũ',
-  glasses: '🕶️ Kính',
   crown: '👑 Vương miện',
-  cape: '🧣 Khăn & nơ',
+  halo: '😇 Hào quang',
+  bow: '🎀 Nơ',
+  glasses: '🕶️ Kính',
+  mask: '🎭 Mặt nạ',
+  necklace: '📿 Vòng cổ',
+  wings: '🪽 Cánh',
 };
 const CATEGORIES = Object.keys(CATEGORY_LABEL) as AccessoryCategory[];
 
@@ -165,7 +169,9 @@ function WardrobeItem({
       className={`${styles.item} ${acc.isEquipped ? styles.itemEquipped : ''} ${trying ? styles.itemTrying : ''}`}
       variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }}
     >
-      <div className={styles.icon}>{isImageIcon(acc.icon) ? <img src={acc.icon} alt="" /> : acc.icon}</div>
+      <div className={styles.icon}>
+        <AccessoryImage accessory={acc} />
+      </div>
       <div className={styles.name}>{acc.name}</div>
       <div className={`${styles.status} ${!acc.isOwned && !canAfford ? styles.locked : ''}`}>{status}</div>
       <div className={styles.actions}>{actions}</div>

@@ -1,3 +1,5 @@
+import type { AccessoryCategory } from './view/accessoryLayout';
+
 export type PetStage = 1 | 2 | 3 | 4 | 5;
 
 export interface PetSpeciesConfig {
@@ -54,13 +56,13 @@ export interface FeedResult {
   xpBalance: number;
 }
 
-export type AccessoryCategory = 'hat' | 'glasses' | 'crown' | 'cape';
+export type { AccessoryCategory } from './view/accessoryLayout';
 
 /** 1 món trong tủ đồ (GET /api/pet/accessories) — server đã gộp trạng thái của bé. */
 export interface Accessory {
   id: string;
   name: string;
-  /** Emoji hoặc URL ảnh */
+  /** Đường dẫn ảnh, vd. /assets/pets/accessories/hat/cap.png */
   icon: string;
   category: AccessoryCategory;
   costXp: number;

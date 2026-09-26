@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { HttpError } from '../../../shared/http';
 import type { ChildXpService } from '../pet.xp';
-import { ChildPetAccessory, PetAccessory, type AccessoryCategory, type IPetAccessory } from './pet-accessory.model';
+import { ACCESSORY_SLOT, ChildPetAccessory, PetAccessory, type AccessoryCategory, type IPetAccessory } from './pet-accessory.model';
 
 /** Phụ kiện trả về cho bé (đã gộp trạng thái sở hữu/đang mặc). */
 export interface AccessoryDTO {
@@ -99,7 +99,12 @@ export class PetAccessoryService {
     }
 
     try {
-      await ChildPetAccessory.create({ child_id: childId, accessory_id: accId, category: accessory.category });
+      await ChildPetAccessory.create({
+        child_id: childId,
+        accessory_id: accId,
+        category: accessory.category,
+        slot: ACCESSORY_SLOT[accessory.category],
+      });
     } catch (err) {
       // 2 request mua cùng lúc hoặc lưu lỗi → hoàn lại XP đã trừ
       await this.xp.add(childId, accessory.cost_xp, 'pet_accessory_refund', accessoryId);
@@ -110,8 +115,8 @@ export class PetAccessoryService {
   }
 
   /**
-   * Mặc 1 món: tháo mọi món khác CÙNG category rồi mới mặc món mới.
-   * Index `one_equipped_per_category` đảm bảo bất biến kể cả khi 2 request chạy song song
+   * Mặc 1 món: tháo mọi món khác CÙNG vị trí đeo (vd. mũ ↔ vương miện) rồi mới mặc món mới.
+   * Index `one_equipped_per_slot` đảm bảo bất biến kể cả khi 2 request chạy song song
    * (không cần transaction nên chạy được cả trên MongoDB standalone).
    */
   async equip(childId: string, accessoryId: string): Promise<WardrobeDTO> {
@@ -121,7 +126,7 @@ export class PetAccessoryService {
 
     if (!mine.is_equipped) {
       await ChildPetAccessory.updateMany(
-        { child_id: childId, category: mine.category, is_equipped: true, _id: { $ne: mine._id } },
+        { child_id: childId, slot: mine.slot, is_equipped: true, _id: { $ne: mine._id } },
         { is_equipped: false },
       );
       try {
@@ -166,10 +171,10 @@ export class PetAccessoryService {
       { new: true, runValidators: true },
     );
     if (!doc) throw new HttpError(404, 'ACCESSORY_NOT_FOUND', 'Không tìm thấy phụ kiện');
-    // category đổi → cập nhật bản sao ở các bé đã mua và tháo ra để không vi phạm "mỗi loại 1 món"
+    // category đổi → cập nhật bản sao ở các bé đã mua và tháo ra để không vi phạm "mỗi vị trí 1 món"
     await ChildPetAccessory.updateMany(
       { accessory_id: doc._id, category: { $ne: doc.category } },
-      { category: doc.category, is_equipped: false },
+      { category: doc.category, slot: ACCESSORY_SLOT[doc.category], is_equipped: false },
     );
     return toAdminDTO(doc);
   }

@@ -140,7 +140,7 @@ export default function AdminMasterDataPage() {
 
   // Columns for Accessories
   const accessoryColumns: Column<any>[] = [
-    { key: 'icon', header: 'Icon', render: (i) => <div style={{ fontSize: 24 }}>{i.icon}</div> },
+    { key: 'icon', header: 'Ảnh', render: (i) => <img src={i.icon} alt="" title={i.icon} style={{ width: 40, height: 40, objectFit: 'contain' }} /> },
     { key: 'name', header: 'Tên phụ kiện', render: (i) => <span style={{ fontWeight: 600 }}>{i.name}</span> },
     { key: 'category', header: 'Danh mục', render: (i) => <span className="admin-badge badge-primary">{ACCESSORY_CATEGORY_LABEL[i.category] ?? i.category}</span> },
     { key: 'priceXP', header: 'Giá (XP)', render: (i) => `${i.priceXP} XP` },

@@ -1,5 +1,5 @@
 import { asyncHandler } from '../../shared/http';
-import { resolveChildId } from './pet.access';
+import { resolveChildId } from '../../shared/childAccess';
 import type { PetService } from './pet.service';
 
 export function createPetController(service: PetService) {

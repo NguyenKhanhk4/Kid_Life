@@ -3,6 +3,7 @@ import { IoPersonAddOutline, IoChevronDownOutline } from 'react-icons/io5';
 import { useAuth } from '@/modules/auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getWalletData, WalletData } from '@/shared/utils/walletStorage';
+import { pickActiveChild, setActiveChildId } from '@/shared/utils/activeChild';
 import '@/modules/auth/auth-kids.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -33,7 +34,7 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
       .then(json => {
         if (json.success && json.data?.length > 0) {
           setChildren(json.data);
-          setSelected(json.data[0]);
+          setSelected(pickActiveChild<ChildOption>(json.data));
         }
       })
       .catch(() => {});
@@ -72,6 +73,7 @@ export default function ChildPicker({ onSelect }: ChildPickerProps) {
   const handleSelect = (child: ChildOption) => {
     setSelected(child);
     setOpen(false);
+    setActiveChildId(child._id); // các trang phụ huynh (báo cáo...) đổi theo bé vừa chọn
     onSelect?.(child);
   };
 

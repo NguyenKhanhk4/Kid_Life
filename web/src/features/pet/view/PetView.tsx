@@ -82,6 +82,8 @@ export function PetView({ speciesId, stage, feedsLeft, blockedLabel, accessories
               glow={behavior.idle.glow}
               eyesClosed={animator.eyesClosed}
               accessories={accessories}
+              speciesId={speciesId}
+              stage={displayStage}
             />
           )}
         </div>

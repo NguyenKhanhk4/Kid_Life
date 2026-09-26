@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { WornAccessories } from '../types';
+import type { PetStage, WornAccessories } from '../types';
 import { AccessoryLayer } from './AccessoryLayer';
 import type { EyeRig } from './eyes.config';
 import styles from './PetView.module.css';
@@ -12,6 +12,9 @@ interface PetFigureProps {
   eyesClosed: boolean;
   /** Phụ kiện đang mặc / mặc thử */
   accessories?: WornAccessories;
+  /** Loài + stage đang hiện → tính vị trí phụ kiện */
+  speciesId: string;
+  stage: PetStage;
 }
 
 const BLINK_MS = 180;
@@ -51,11 +54,12 @@ function useBlink(enabled: boolean) {
  * Vẽ pet từ 1 ảnh stage + mí mắt phủ lên để chớp mắt (ảnh không bị cắt tách).
  * Mọi chuyển động của cả con (nhún, lắc…) do phần tử cha (.avatar) đảm nhận.
  */
-export function PetFigure({ src, eyes, alt, glow, eyesClosed, accessories }: PetFigureProps) {
+export function PetFigure({ src, eyes, alt, glow, eyesClosed, accessories, speciesId, stage }: PetFigureProps) {
   const blinking = useBlink(eyes.length > 0 && !eyesClosed);
 
   return (
     <div className={`${styles.figure} ${glow ? styles.glow : ''}`}>
+      {accessories && <AccessoryLayer worn={accessories} speciesId={speciesId} stage={stage} layer="behind" />}
       <img className={styles.avatarImg} src={src} alt={alt} draggable={false} />
 
       {eyes.map((eye, i) => {
@@ -88,7 +92,7 @@ export function PetFigure({ src, eyes, alt, glow, eyesClosed, accessories }: Pet
         );
       })}
 
-      {accessories && <AccessoryLayer worn={accessories} eyes={eyes} />}
+      {accessories && <AccessoryLayer worn={accessories} speciesId={speciesId} stage={stage} layer="front" />}
     </div>
   );
 }

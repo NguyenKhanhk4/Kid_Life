@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import mongoose from 'mongoose';
-import { HttpError } from '../../shared/http';
-import Child from '../children/children.model';
+import { HttpError } from './http';
+import Child from '../modules/children/children.model';
 
 /**
  * Token hiện là của phụ huynh (bé đăng nhập bằng PIN trên máy của bố mẹ), nên bé nào đang dùng
@@ -18,7 +18,7 @@ export async function resolveChildId(req: Request): Promise<string> {
   const child = await Child.findById(childId).select('parentId').lean();
   if (!child) throw new HttpError(404, 'CHILD_NOT_FOUND', 'Không tìm thấy hồ sơ bé');
   if (req.user?.role !== 'admin' && String(child.parentId) !== req.user?.id) {
-    throw new HttpError(403, 'FORBIDDEN', 'Bạn không có quyền xem thú cưng của bé này');
+    throw new HttpError(403, 'FORBIDDEN', 'Bạn không có quyền xem dữ liệu của bé này');
   }
   return childId;
 }
