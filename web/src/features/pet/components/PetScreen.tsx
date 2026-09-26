@@ -1,6 +1,6 @@
 import { getSpeciesConfig } from '../config/species.config';
 import { EVOLUTION_CONFIG } from '../config/evolution.config';
-import { isMaxStage } from '../logic/petLogic';
+import { feedsLeftToday, isMaxStage } from '../logic/petLogic';
 import { PetView } from '../view/PetView';
 import type { Pet } from '../types';
 import styles from './PetScreen.module.css';
@@ -16,6 +16,7 @@ export function PetScreen({ pet, onTap, onFeed }: PetScreenProps) {
   const maxed = isMaxStage(pet);
   const expNeeded = EVOLUTION_CONFIG.expToNextStage[pet.currentStage];
   const percentage = maxed ? 100 : Math.min(100, (pet.currentExp / expNeeded) * 100);
+  const feedsLeft = feedsLeftToday(pet);
 
   return (
     <div className={styles.container}>
@@ -24,7 +25,7 @@ export function PetScreen({ pet, onTap, onFeed }: PetScreenProps) {
         Giai đoạn {pet.currentStage} / {EVOLUTION_CONFIG.maxStage}
       </p>
 
-      <PetView speciesId={pet.speciesId} stage={pet.currentStage} onTap={onTap} onFeed={onFeed} />
+      <PetView key={pet.speciesId} speciesId={pet.speciesId} stage={pet.currentStage} feedsLeft={feedsLeft} onTap={onTap} onFeed={onFeed} />
 
       <div className={styles.expBarRow}>
         <div className={styles.expBarLabel}>

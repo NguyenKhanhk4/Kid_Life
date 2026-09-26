@@ -1,4 +1,4 @@
-import { PET_SPECIES } from '../config/species.config';
+import { PET_SPECIES, getStageImageUrl } from '../config/species.config';
 import styles from './PetSpeciesSelectPage.module.css';
 
 interface PetSpeciesSelectPageProps {
@@ -18,7 +18,7 @@ export function PetSpeciesSelectPage({ onSelect }: PetSpeciesSelectPageProps) {
       <div className={styles.grid}>
         {PET_SPECIES.map((species) => (
           <div key={species.id} className={styles.card} onClick={() => onSelect(species.id)}>
-            <img className={styles.thumb} src={`${species.imageBaseUrl}/stage-1.svg`} alt={species.name} />
+            <img className={styles.thumb} src={getStageImageUrl(species, 1)} alt={species.name} />
             <div className={styles.name}>{species.name}</div>
           </div>
         ))}

@@ -1,16 +1,23 @@
-import express from 'express';
-import cors from 'cors';
+import { createApp } from './app';
+import { env } from './config/env';
+import { connectMongo, disconnectMongo } from './database/mongo';
 
-const app = express();
-const port = process.env.PORT || 3000;
+async function main() {
+  await connectMongo(env.mongoUri);
+  const server = createApp().listen(env.port, () => {
+    console.log(`KidLife API chạy tại http://localhost:${env.port} (MongoDB: ${env.mongoUri})`);
+  });
 
-app.use(cors());
-app.use(express.json());
+  const shutdown = () => {
+    server.close(() => {
+      disconnectMongo().finally(() => process.exit(0));
+    });
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
 
-app.get('/', (req, res) => {
-  res.send('KidLife API is running');
-});
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+main().catch((err) => {
+  console.error('Không khởi động được server:', err);
+  process.exit(1);
 });

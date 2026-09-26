@@ -11,7 +11,9 @@ export function loadPet(): Pet | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as Pet;
+    const saved = JSON.parse(raw) as Partial<Pet>;
+    // dữ liệu lưu từ bản cũ chưa có đếm lượt cho ăn
+    return { feedsToday: 0, lastFedDate: null, ...saved } as Pet;
   } catch {
     return null;
   }
